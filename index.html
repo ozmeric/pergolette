@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pergolette | Motorized Pergolas &amp; Outdoor Living — Powhatan, VA</title>
-<meta name="description" content="Custom motorized louvered pergolas, designed and installed by Pergolette. Serving Virginia, Maryland, and North Carolina from our home base in Powhatan, VA.">
+<title>Skyveranda | Motorized Pergolas &amp; Outdoor Living — Powhatan, VA</title>
+<meta name="description" content="Motorized pergolas, custom decks, outdoor kitchens, and full outdoor living solutions from Skyveranda. Serving Virginia, Maryland, and North Carolina from our home base in Powhatan, VA.">
 
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
@@ -124,13 +124,14 @@
   .logo{
     font-family: 'Manrope', var(--font-body);
     font-weight: 800;
-    font-size: 22px;
+    font-size: 19px;
     color: var(--paper);
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
     text-decoration:none;
     display:flex;
     align-items:center;
     gap:12px;
+    white-space: nowrap;
   }
   .logo .mark{
     width: 34px; height: 22px;
@@ -427,6 +428,25 @@
   }
   .tech-card p{ font-size: 14.5px; opacity:0.72; margin:0; }
   .tech-icon{ width: 34px; height:34px; margin-top:20px; }
+  .services-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1px;
+    background: var(--line-light);
+    border: 1px solid var(--line-light);
+  }
+  .flagship-badge{
+    position:absolute;
+    top:16px; right:20px;
+    background: var(--amber);
+    color: #1B1200;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.06em;
+  }
 
   @media (max-width: 980px){
     .tech-grid{ grid-template-columns: repeat(2, 1fr); }
@@ -649,11 +669,12 @@
         </svg>
       </span>
       <span class="logo-text">
-        pergolette
+        skyveranda
         <span class="logo-tag">SEASONS &amp; SKY</span>
       </span>
     </a>
     <nav class="main-nav">
+      <a href="#services">Services</a>
       <a href="#technology">Technology</a>
       <a href="#gallery">Gallery</a>
       <a href="#process">Process</a>
@@ -713,7 +734,7 @@
     <div class="hero-content wrap">
       <span class="eyebrow">Motorized Louvered Pergolas</span>
       <h1>Your patio, on your schedule.</h1>
-      <p class="lede">Open the roof for sun. Close it before the rain hits. Pergolette designs, builds, and installs custom motorized pergolas from our home base in Powhatan, VA — serving families across Virginia, Maryland, and North Carolina.</p>
+      <p class="lede">Open the roof for sun. Close it before the rain hits. Skyveranda designs, builds, and installs custom motorized pergolas from our home base in Powhatan, VA — serving families across Virginia, Maryland, and North Carolina.</p>
       <div class="hero-ctas">
         <a href="#quote" class="btn btn-primary">Get My Free Quote</a>
         <a href="tel:+18042979999" class="btn btn-ghost-dark">Call (804) 297-9999</a>
@@ -726,17 +747,61 @@
   <div class="wrap">
     <div class="trust-item"><span class="dot"></span>Family-owned, based in Powhatan, VA</div>
     <div class="trust-item"><span class="dot"></span>Serving VA &middot; MD &middot; NC</div>
-    <div class="trust-item"><span class="dot"></span>Custom-engineered aluminum frames</div>
+    <div class="trust-item"><span class="dot"></span>Full-service outdoor living, start to finish</div>
     <div class="trust-item"><span class="dot"></span>Free on-site design consultation</div>
   </div>
 </div>
 
+<section class="section section-light" id="services">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">What We Build</span>
+      <h2>Motorized pergolas are our flagship. They're not all we do.</h2>
+      <p>Skyveranda is a full-service outdoor living contractor — we design and build the whole space, not just the roof over it.</p>
+    </div>
+
+    <div class="services-grid reveal">
+      <div class="tech-card" style="position:relative;">
+        <span class="flagship-badge">FLAGSHIP</span>
+        <span class="tech-index">01</span>
+        <svg class="tech-icon" viewBox="0 0 34 34" fill="none"><rect x="4" y="8" width="26" height="3" rx="1.5" fill="#D98C3D"/><rect x="4" y="15.5" width="26" height="3" rx="1.5" fill="#D98C3D" opacity="0.7"/><rect x="4" y="23" width="26" height="3" rx="1.5" fill="#D98C3D" opacity="0.45"/></svg>
+        <h3>Motorized Pergolas</h3>
+        <p>Louvered aluminum roofs that open and close at the push of a button — our signature build. <a href="#technology" style="color:var(--amber-dark); text-decoration:underline;">See how it works &darr;</a></p>
+      </div>
+      <div class="tech-card">
+        <span class="tech-index">02</span>
+        <svg class="tech-icon" viewBox="0 0 34 34" fill="none"><rect x="4" y="20" width="26" height="8" rx="1" stroke="#D98C3D" stroke-width="2"/><line x1="4" y1="24" x2="30" y2="24" stroke="#D98C3D" stroke-width="1.4" opacity="0.6"/><line x1="9" y1="20" x2="9" y2="6" stroke="#D98C3D" stroke-width="2"/><line x1="25" y1="20" x2="25" y2="6" stroke="#D98C3D" stroke-width="2"/></svg>
+        <h3>Custom Decks</h3>
+        <p>Wood and composite decks designed around how your family actually uses the yard, not a generic layout.</p>
+      </div>
+      <div class="tech-card">
+        <span class="tech-index">03</span>
+        <svg class="tech-icon" viewBox="0 0 34 34" fill="none"><rect x="4" y="16" width="26" height="12" rx="1.5" stroke="#D98C3D" stroke-width="2"/><rect x="8" y="8" width="6" height="8" fill="#D98C3D" opacity="0.75"/><circle cx="24" cy="12" r="3" stroke="#D98C3D" stroke-width="1.8"/></svg>
+        <h3>Outdoor Kitchens</h3>
+        <p>Built-in grills, counters, and storage that turn your patio into a second kitchen for entertaining.</p>
+      </div>
+      <div class="tech-card">
+        <span class="tech-index">04</span>
+        <svg class="tech-icon" viewBox="0 0 34 34" fill="none"><path d="M4 27 L14 15 L20 20 L30 8" stroke="#D98C3D" stroke-width="2.2" fill="none" stroke-linejoin="round"/><rect x="4" y="27" width="26" height="3" fill="#D98C3D" opacity="0.5"/></svg>
+        <h3>Hardscaping &amp; Patios</h3>
+        <p>Pavers, retaining walls, and fire features that tie the whole outdoor space together.</p>
+      </div>
+      <div class="tech-card">
+        <span class="tech-index">05</span>
+        <svg class="tech-icon" viewBox="0 0 34 34" fill="none"><circle cx="17" cy="14" r="6" stroke="#D98C3D" stroke-width="2"/><path d="M17 2v3M17 23v3M5 14h3M26 14h3M8.5 5.5l2 2M23.5 5.5l-2 2" stroke="#D98C3D" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="26" width="26" height="3" rx="1" stroke="#D98C3D" stroke-width="1.6"/></svg>
+        <h3>Outdoor Lighting &amp; Screens</h3>
+        <p>Low-voltage lighting and retractable screens for evenings outside — no bugs, no fumbling for a switch.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section section-warm" id="technology">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="eyebrow">The Technology</span>
+      <span class="eyebrow">Our Flagship Build</span>
       <h2>One remote. Total control of your outdoor space.</h2>
-      <p>Every Pergolette pergola is built around a motorized louvered roof — aluminum blades that rotate up to 170&deg; at the touch of a button, so your patio adapts to whatever the day brings.</p>
+      <p>Every Skyveranda pergola is built around a motorized louvered roof — aluminum blades that rotate up to 170&deg; at the touch of a button, so your patio adapts to whatever the day brings.</p>
     </div>
 
     <div class="tech-grid reveal">
@@ -906,7 +971,7 @@
 
         <div class="quote-contact-list">
           <div class="quote-contact-item"><span class="ico">&#9742;</span> <a href="tel:+18042979999">(804) 297-9999</a></div>
-          <div class="quote-contact-item"><span class="ico">&#9993;</span> <a href="mailto:hello@pergolette.com">hello@pergolette.com</a></div>
+          <div class="quote-contact-item"><span class="ico">&#9993;</span> <a href="mailto:hello@skyveranda.com">hello@skyveranda.com</a></div>
           <div class="quote-contact-item"><span class="ico">&#9679;</span> Powhatan, VA &middot; Serving VA, MD &amp; NC</div>
         </div>
       </div>
@@ -951,7 +1016,7 @@
         </div>
         <div class="form-field">
           <label for="f-message">Tell us about your project</label>
-          <textarea id="f-message" name="message" placeholder="Patio size, timeline, anything you have in mind..."></textarea>
+          <textarea id="f-message" name="message" placeholder="What are you looking to build — pergola, deck, outdoor kitchen, patio? Include size, timeline, anything you have in mind..."></textarea>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Send My Request</button>
         <p class="form-note">We reply to every request personally — no spam, no shared lists.</p>
@@ -977,11 +1042,11 @@
             </svg>
           </span>
           <span class="logo-text">
-            pergolette
+            skyveranda
             <span class="logo-tag">SEASONS &amp; SKY</span>
           </span>
         </a>
-        <p>Motorized pergolas and outdoor living solutions, designed and installed across Virginia, Maryland, and North Carolina.</p>
+        <p>Motorized pergolas, decks, outdoor kitchens, and full outdoor living solutions, designed and installed across Virginia, Maryland, and North Carolina.</p>
       </div>
       <div>
         <h4>Explore</h4>
@@ -1004,13 +1069,13 @@
         <h4>Contact</h4>
         <ul>
           <li><a href="tel:+18042979999">(804) 297-9999</a></li>
-          <li><a href="mailto:hello@pergolette.com">hello@pergolette.com</a></li>
+          <li><a href="mailto:hello@skyveranda.com">hello@skyveranda.com</a></li>
           <li><a href="https://www.instagram.com/365pergola/" target="_blank" rel="noopener">Instagram</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>&copy; <span id="year"></span> Pergolette. All rights reserved.</span>
+      <span>&copy; <span id="year"></span> Skyveranda. All rights reserved.</span>
       <span style="display:flex; align-items:center; gap:8px;">Powhatan, VA &middot; Designed by
         <a href="https://weblina.llc" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:6px; color:inherit; opacity:0.9; text-decoration:none;">
           <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFIAAABKCAYAAAAoqQNtAAAMTWlDQ1BJQ0MgUHJvZmlsZQAASImVVwdYU8kWnltSIQQIREBK6E0QkRJASggtgPQiiEpIAoQSY0JQsaOLCq5dRLCiqyCKHRCxYV9ZFLtrWSyoKOtiwa68CQF02Ve+N983d/77z5l/zjl37r0zANDb+VJpDqoJQK4kTxYT7M8al5TMIj0HRMAEAIwEZnyBXMqJigqHd2Cg/Xt5dwMgyvaqg1Lrn/3/tWgJRXIBAEgUxGlCuSAX4oMA4E0CqSwPAKIU8uZT86RKvBpiHRl0EOIqJc5Q4SYlTlPhy302cTFciB8DQFbn82UZAGh0Q56VL8iAOnQYLXCSCMUSiP0g9snNnSyEeC7ENtAGzklX6rPTftDJ+Jtm2qAmn58xiFWx9BVygFguzeFP/z/T8b9Lbo5iYA5rWNUzZSExyphh3h5nTw5TYnWIP0jSIiIh1gYAxcXCPnslZmYqQuJV9qiNQM6FOVM+aXSMPCeW18/HCPkBYRAbQpwuyYkI77cpTBcHKW1g/tAycR4vDmI9iKtE8sDYfpsTsskxA/PeSJdxOf38M76szwel/jdFdjxHpY9pZ4p4/fqYY0FmXCLEVIgD8sUJERBrQBwhz44N67dJKcjkRgzYyBQxylgsIJaJJMH+Kn2sNF0WFNNvvzNXPhA7diJTzIvox1fyMuNCVLnCHgv4ff7DWLBukYQTP6Ajko8LH4hFKAoIVMWOk0WS+FgVj+tJ8/xjVGNxO2lOVL897i/KCVbyZhDHyfNjB8bm58HFqdLHi6R5UXEqP/HyLH5olMoffC8IB1wQAFhAAWsamAyygLi1q74L3ql6ggAfyEAGEAGHfmZgRGJfjwReY0EB+BMiEZAPjvPv6xWBfMh/HcIqOfEgp7o6gPT+PqVKNngCcS4IAznwXtGnJBn0IAE8hoz4Hx7xYRXAGHJgVfb/e36A/c5wIBPezygGZmTRByyJgcQAYggxiGiLG+A+uBceDq9+sDrjbNxjII7v9oQnhDbCQ8J1Qjvh9iRxoWyIl2NBO9QP6s9P2o/5wa2gpivuj3tDdaiMM3ED4IC7wHk4uC+c2RWy3H6/lVlhDdH+WwQ/PKF+O4oTBaUMo/hRbIaO1LDTcB1UUeb6x/yofE0bzDd3sGfo/Nwfsi+EbdhQS2wRdgA7h53ELmBNWD1gYcexBqwFO6rEgyvucd+KG5gtps+fbKgzdM18f7LKTMqdapw6nb6o+vJE0/KULyN3snS6TJyRmcfiwD+GiMWTCBxHsJydnN0AUP5/VJ+3N9F9/xWE2fKdm/8HAN7He3t7j3znQo8DsM8dfhIOf+ds2PDXogbA+cMChSxfxeHKCwF+Oejw7dMHxsAc2MB4nIEb8AJ+IBCEgkgQB5LAROh9JlznMjAVzATzQBEoAcvBGlAONoGtoArsBvtBPWgCJ8FZcBFcBtfBHbh6OsAL0A3egc8IgpAQGsJA9BETxBKxR5wRNuKDBCLhSAyShKQiGYgEUSAzkflICbISKUe2INXIPuQwchK5gLQht5EHSCfyGvmEYqg6qoMaoVboSJSNctAwNA6dgGagU9ACdAG6FC1DK9FdaB16Er2IXkfb0RdoDwYwNYyJmWIOGBvjYpFYMpaOybDZWDFWilVitVgjfM5XsXasC/uIE3EGzsId4AoOweNxAT4Fn40vwcvxKrwOP41fxR/g3fg3Ao1gSLAneBJ4hHGEDMJUQhGhlLCdcIhwBr5LHYR3RCKRSbQmusN3MYmYRZxBXELcQNxDPEFsIz4i9pBIJH2SPcmbFEnik/JIRaR1pF2k46QrpA7SB7Ia2YTsTA4iJ5Ml5EJyKXkn+Rj5Cvkp+TNFk2JJ8aREUoSU6ZRllG2URsolSgflM1WLak31psZRs6jzqGXUWuoZ6l3qGzU1NTM1D7VoNbHaXLUytb1q59UeqH1U11a3U+eqp6gr1Jeq71A/oX5b/Q2NRrOi+dGSaXm0pbRq2inafdoHDYaGowZPQ6gxR6NCo07jisZLOoVuSefQJ9IL6KX0A/RL9C5NiqaVJleTrzlbs0LzsOZNzR4thtYorUitXK0lWju1Lmg90yZpW2kHagu1F2hv1T6l/YiBMcwZXIaAMZ+xjXGG0aFD1LHW4elk6ZTo7NZp1enW1dZ10U3QnaZboXtUt52JMa2YPGYOcxlzP/MG89Mwo2GcYaJhi4fVDrsy7L3ecD0/PZFesd4evet6n/RZ+oH62for9Ov17xngBnYG0QZTDTYanDHoGq4z3Gu4YHjx8P3DfzdEDe0MYwxnGG41bDHsMTI2CjaSGq0zOmXUZcw09jPOMl5tfMy404Rh4mMiNlltctzkOUuXxWHlsMpYp1ndpoamIaYK0y2mraafzazN4s0KzfaY3TOnmrPN081Xmzebd1uYWIy1mGlRY/G7JcWSbZlpudbynOV7K2urRKuFVvVWz6z1rHnWBdY11ndtaDa+NlNsKm2u2RJt2bbZthtsL9uhdq52mXYVdpfsUXs3e7H9Bvu2EYQRHiMkIypH3HRQd+A45DvUODxwZDqGOxY61ju+HGkxMnnkipHnRn5zcnXKcdrmdGeU9qjQUYWjGke9drZzFjhXOF8bTRsdNHrO6IbRr1zsXUQuG11uuTJcx7oudG12/erm7iZzq3XrdLdwT3Vf736TrcOOYi9hn/cgePh7zPFo8vjo6eaZ57nf8y8vB69sr51ez8ZYjxGN2TbmkbeZN997i3e7D8sn1WezT7uvqS/ft9L3oZ+5n9Bvu99Tji0ni7OL89LfyV/mf8j/PdeTO4t7IgALCA4oDmgN1A6MDywPvB9kFpQRVBPUHewaPCP4RAghJCxkRchNnhFPwKvmdYe6h84KPR2mHhYbVh72MNwuXBbeOBYdGzp21di7EZYRkoj6SBDJi1wVeS/KOmpK1JFoYnRUdEX0k5hRMTNjzsUyYifF7ox9F+cftyzuTrxNvCK+OYGekJJQnfA+MSBxZWL7uJHjZo27mGSQJE5qSCYlJyRvT+4ZHzh+zfiOFNeUopQbE6wnTJtwYaLBxJyJRyfRJ/EnHUglpCam7kz9wo/kV/J70nhp69O6BVzBWsELoZ9wtbBT5C1aKXqa7p2+Mv1ZhnfGqozOTN/M0swuMVdcLn6VFZK1Ket9dmT2juzenMScPbnk3NTcwxJtSbbk9GTjydMmt0ntpUXS9imeU9ZM6ZaFybbLEfkEeUOeDtzotyhsFD8pHuT75Ffkf5iaMPXANK1pkmkt0+2mL57+tCCo4JcZ+AzBjOaZpjPnzXwwizNry2xkdtrs5jnmcxbM6ZgbPLdqHnVe9rzfCp0KVxa+nZ84v3GB0YK5Cx79FPxTTZFGkazo5kKvhZsW4YvEi1oXj168bvG3YmHxryVOJaUlX5YIlvz686ify37uXZq+tHWZ27KNy4nLJctvrPBdUbVSa2XBykerxq6qW81aXbz67ZpJay6UupRuWktdq1jbXhZe1rDOYt3ydV/KM8uvV/hX7FlvuH7x+vcbhBuubPTbWLvJaFPJpk+bxZtvbQneUldpVVm6lbg1f+uTbQnbzv3C/qV6u8H2ku1fd0h2tFfFVJ2udq+u3mm4c1kNWqOo6dyVsuvy7oDdDbUOtVv2MPeU7AV7FXuf70vdd2N/2P7mA+wDtQctD64/xDhUXIfUTa/rrs+sb29Iamg7HHq4udGr8dARxyM7mkybKo7qHl12jHpswbHe4wXHe05IT3SdzDj5qHlS851T405dOx19uvVM2JnzZ4POnjrHOXf8vPf5pgueFw7/yv61/qLbxboW15ZDv7n+dqjVrbXukvulhsselxvbxrQdu+J75eTVgKtnr/GuXbwecb3tRvyNWzdTbrbfEt56djvn9qvf83//fGfuXcLd4nua90rvG96v/MP2jz3tbu1HHwQ8aHkY+/DOI8GjF4/lj790LHhCe1L61ORp9TPnZ02dQZ2Xn49/3vFC+uJzV9GfWn+uf2nz8uBffn+1dI/r7ngle9X7eskb/Tc73rq8be6J6rn/Lvfd5/fFH/Q/VH1kfzz3KfHT089Tv5C+lH21/dr4Lezb3d7c3l4pX8bv2wpgQHm0SQfg9Q4AaEkAMOC5kTpedT7sK4jqTNuHwH/CqjNkX4E7l1q4p4/ugrubmwDs3QaAFdSnpwAQRQMgzgOgo0cP1oGzXN+5U1mI8GywOeRrWm4a+DdFdSb9we+hLVCquoCh7b8AdnuDG+8Qx9kAAAAEY0lDUAwNAAFuA+PvAAAAimVYSWZNTQAqAAAACAAEARoABQAAAAEAAAA+ARsABQAAAAEAAABGASgAAwAAAAEAAgAAh2kABAAAAAEAAABOAAAAAAAAAJAAAAABAAAAkAAAAAEAA5KGAAcAAAASAAAAeKACAAQAAAABAAAAUqADAAQAAAABAAAASgAAAABBU0NJSQAAAFNjcmVlbnNob3TapCu6AAAACXBIWXMAABYlAAAWJQFJUiTwAAAB1GlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczpleGlmPSJodHRwOi8vbnMuYWRvYmUuY29tL2V4aWYvMS4wLyI+CiAgICAgICAgIDxleGlmOlBpeGVsWURpbWVuc2lvbj43NDwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgICAgIDxleGlmOlBpeGVsWERpbWVuc2lvbj44MjwvZXhpZjpQaXhlbFhEaW1lbnNpb24+CiAgICAgICAgIDxleGlmOlVzZXJDb21tZW50PlNjcmVlbnNob3Q8L2V4aWY6VXNlckNvbW1lbnQ+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgp9ADBbAAAAHGlET1QAAAACAAAAAAAAACUAAAAoAAAAJQAAACUAAAPCfgD+pAAAA45JREFUeAHsl19IU1Ecx3+KznLqVmv9YSSRTNEihmD1UBEJRhEhSEXig5AIQoGxHqKHsh6ih0ZCgSAGPkhRIUhEkWBE9VAJIlHKlCKM0R+ztuksbcz2u3QP57pz767u3O7dnwOXnT+/8zvn99n3d869WZHIwgJkSsIEshIBOf35NQSjT2jyHfwOfoLwXCDhDenhICfPAiuKNoLZvgWKNmyHwuiz1LIskN/H++Db6F0B3lIXTAZ7hLq2/Ciscdaq3u6SQIZ+eME32A4zk29VL5DMhgX2reCoagXz6rK4YagG6Z94Ah+eXZA49M9EYGB4Dga98zDuC8NUMCIZT5aGrSgbnI4cqCozQbUrD6wF2ZKtb95zEazF+yR9ixuqQLIgdj0KQc/A7GJ/KdFuqM6HpgNmSSzxYMYFiensfdhEnH78EobLt6dhLKrAVC6lUYWeO14Im9bnkDDLDnbJpnlckGOPW8iZiBDdnYGkTWFCRGUFU97TbCEw8cws3d/BnK0IEm/niVceMrH52s+UVyIJ9l8Fldl5ehXpLt7hZt7miiBH7teTV5xUPhMJJZkKfWbiq1HF4VsxlrIg8WV7fMAtTMDbubZtKmZyOnX0tdnIbe6s9sS8tMuC9A3dgK8jdwRWvS9+wfW+mXTiFhPrqdoCqNu1UuhfV3EMHJUnJTayIOlL5uzNALwcnZdMTLfGznITXDlhEcJmXTqyIN/cO0S+nesuTaXNTS0nELzBe8/bhGH8Nt925IHEVBbkUM9uYrj3zCSpp3Pl6VU7Cb+y4TmpYyUDUoJDuZEBqcxH9WgGpGpUyoYZkMp8VI9mQKpGpWxoGJCuklxwlZiguz+kvGNOo7zXMwTI9hZrFGKugGj4/R9o7fBzwsV2o8V6uoNsrDFDY02+JGIEiUC1KFqtpztIVCIqhC5aqpJWo7hmd/9swkeKIUFigFqpkg5YBMnj64z2q9uXDUslWoBkpTUv9RsCpJYBiqrDX9YfxiOt0bchQLLOSdwcj5RDP2KhgxX7eCmf9q1bamNQLLXwChL9s1SP/bz+LEOD5HV+yYHkldbo3zAgtU5vOlAMHAtPxdP+dU1tDEyr9NY6rXHvhgfJI71ZIHmmteFALie9cQ4WBC5XaLWINjzTGn3Sa+ie2os3FC9oWmlyyqVtRH/4y+u2Fn0aDiTrnGRBYgFiqYxlxzutEabhQKpNb7XA6QBF9fxvkH8BAAD//2q6BqgAAAPGSURBVO2ZX0gUQRzHf4ppeepZZn+wJBIVLUIEq4eKSDCKCEEqCh+ERBAKDHuIHsp6iB6ShAJBDHyQokKQiCLBiOqhEkSiFBUjDOmPWf47S5Oz+w7MMrs3e27Xbu3e3sDdzOx+f7Pz++zvNzPHxfj9CwskKd2tO5Wru0+PKm2zGk+upAcNVdM4Tj1Dv5TrMg1uirqKEg9VlCQqNrxh9ZwLy5/xR7E65n+BbKhOpYKsJarJACIgoegBwr3FQLZ0zFBLhw9SU4v4Ym0DEhABU1t4JMlAc60IXHSO33cVSDgtg8CjTXaPg0LNIzfUyxD1ZrTFOdkmIuGYLOoQbfjI1j0RBkAWZMUH6ayKRjzbtiBl6Q2IKNr1k10UvqCTaVwJElzEtyxwCrvJ19iwBwhhKM7VVqmNOcvSW+uL0Si1MhoxJ1uDlKW3FiQA9QzNSXd5UetqkNo3LYLhbaSrEeBWprV2nrZLbUwwVHojrcWjjmyDwRiiDn0riq1TGw6HijYxXY3qrICIMR0NUkzXUCBFnWtBwnFZesvS1ajOCpi2j0g4LYs2Ma05GKM6rjezdgRIOCxGmwwih2JUx/Vm1Y4BCYcRcSj8EM46ki+jOolp2JccBTJsL/+BYRSkSZCjIKMgTSJg0jDRiIyCNImAScOEFZGv7x6g+dkJNoWyi2M0Nuk3aTrOHCYtJZbazqWxyccleGnLofsqR3T/jh14VE3To2+Y+MyNCXrRN6cydFtne148XT7uZW4npW+mnL2NKgS6IEe6r9Pn3ttM3Pb8B11rn1YZuq1zsjSJynYsY26vzj9CGYUnVAh0QU59fEWDnbVMPD7tp9K6MZWh2zrtdWmUmhTL3M4urqfktVtVCHRBQtV77xj9nPzADJof+qi1c0Zl7JZOeXEiVe7zMHeXpqyn/IM3g1wPCfLrYDsNv6xXjKqufqeBkXml74ZGTkYcNZ1arriaua2WVmaXKn3eCAkSInHTef9pnmqbJlyzg2Onrq/y0oY1cYyXbJMxDNL3rZ/6H1RyPQHmpVtTER+ZiMSzR5MViACQu7+ZPCtyFRZiY9GIhHh8+DG9e3petKNIXjPFNZE7vXHXBUrN3MO7QbUhkLCSwcRu3tkzS139czQYWDudemhHCmcHIrAoN56KCxKU3ZnTWgwidIZBQow0H+lqUA7quBbJBWviuqIaStRJZ9H3PwLJDbGbf+m7oxyN+PVIqXHEWZV3WLo76/kYFkg+GA7tk4GPb/Qtg8p/m/P7Tqnx2xnwPOmbKCVw0NYeto348VcgjTzALZrfHaoK2gQ+OB0AAAAASUVORK5CYII=" alt="Weblina" style="width:18px; height:18px; border-radius:5px; display:block;">
