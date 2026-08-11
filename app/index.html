@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pergolette — Job Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #0a0a0a; overscroll-behavior: none; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 4px; }
+  input, textarea, select { -webkit-appearance: none; }
+  input:focus, textarea:focus, select:focus { border-color: #e5192b !important; }
+  button { -webkit-appearance: none; }
+  @media(max-width:700px) {
+    .desktop-sidebar { display: none !important; }
+    .bottom-nav { display: flex !important; }
+    .content-area { padding-bottom: 76px !important; }
+  }
+  .bottom-nav { display: none; }
+  @keyframes toastIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+//<![CDATA[
+const { useState, useEffect, useRef, useMemo } = React;
+const e = React.createElement;
+
+// ============================================================
+// CONFIG
+// ============================================================
+const API_URL = "https://pergolette.weblinallc.workers.dev/";
+const COMPANY_NAME = "Pergolette";
+
+async function api(pin, action, extra) {
+  extra = extra || {};
+  const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ pin, action, ...extra })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+function genId(prefix) {
+  return prefix + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+function fmtMoney(n) {
+  n = parseFloat(n) || 0;
+  return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function fmtDate(d) {
+  if (!d) return "—";
+  const dt = new Date(d + "T00:00:00");
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function isOverdue(dueDate, status) {
+  if (!dueDate || status === "Done") return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(dueDate + "T00:00:00");
+  return !(due.getTime() >= today.getTime());
+}
+
+// ============================================================
+// DESIGN SYSTEM — Red / White / Black
+// ============================================================
+const C = {
+  bg: "#0a0a0a",
+  card: "#161616",
+  cardAlt: "#1c1c1c",
+  border: "#2b2b2b",
+  borderLight: "#3a3a3a",
+  inputBg: "#050505",
+  red: "#e5192b",
+  redDark: "#a10f1e",
+  redSoft: "rgba(229,25,43,0.12)",
+  white: "#f7f7f5",
+  offwhite: "#d8d8d6",
+  gray: "#8f8f8f",
+  grayDark: "#5c5c5c",
+  green: "#1db978",
+  amber: "#f2a007",
+  maroon: "#8f1d24",
+  cyan: "#2fa3c4",
+  purple: "#8b6bd6",
+};
+
+const TASK_STATUS_COLORS = {
+  "To Do": C.gray,
+  "In Progress": C.amber,
+  "Blocked": C.maroon,
+  "Done": C.green
+};
+
+const S = {
+  root: { display:"flex", flexDirection:"column", height:"100vh", background:C.bg, color:C.offwhite, fontFamily:"'Inter',system-ui,sans-serif", overflow:"hidden" },
+  header: { background:C.card, borderBottom:`1px solid ${C.border}`, padding:"0 20px", height:56, display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 },
+  sidebar: { width:220, background:C.card, borderRight:`1px solid ${C.border}`, overflowY:"auto", flexShrink:0, padding:"8px 0" },
+  content: { flex:1, overflowY:"auto", padding:20 },
+  card: { background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:16, marginBottom:12 },
+  input: { width:"100%", background:C.inputBg, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", color:C.white, fontSize:14, fontFamily:"inherit", outline:"none" },
+  label: { display:"block", fontSize:11, fontWeight:700, color:C.gray, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 },
+  btn: (variant) => variant === "ghost"
+    ? { background:"transparent", border:`1px solid ${C.border}`, color:C.offwhite, borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:600, fontFamily:"inherit" }
+    : variant === "danger"
+    ? { background:"transparent", border:`1px solid ${C.maroon}`, color:"#ef5a63", borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:600, fontFamily:"inherit" }
+    : { background:C.red, color:"#fff", border:"none", borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:700, fontFamily:"inherit" },
+  sideLabel: { fontSize:10, fontWeight:700, color:C.grayDark, textTransform:"uppercase", letterSpacing:"0.12em", padding:"8px 16px 4px" },
+  sideItem: (active) => ({
+    padding:"8px 16px", cursor:"pointer", fontSize:13, fontWeight:active?700:400,
+    color: active ? C.red : C.offwhite,
+    background: active ? "rgba(229,25,43,0.08)" : "transparent",
+    borderLeft: active ? `2px solid ${C.red}` : "2px solid transparent",
+    display:"flex", alignItems:"center", gap:8, userSelect:"none"
+  }),
+};
+
+const EXPENSE_CATEGORIES = {
+  "Materials": ["Lumber","Louvers/Motors","Hardware/Fasteners","Concrete/Footings","Roofing/Panels","Other"],
+  "Labor": ["Install Crew","Electrical","Subcontractor","Other"],
+  "Permits": ["Building Permit","Electrical Permit","HOA Fee","Other"],
+  "Design/Consultation": ["Site Visit","3D Rendering","Engineering","Other"],
+  "Delivery/Equipment": ["Delivery","Equipment Rental","Crane/Lift","Other"],
+  "Professional Fees": ["Sales Commission","Insurance","Other"]
+};
+const TASK_CATEGORIES = ["Sales","Design","Permits","Install","Electrical","Punch List","Admin","Other"];
+const PRIORITIES = ["High","Med","Low"];
+const PROJECT_STATUSES = ["Lead","Active","Completed"];
+const DEFAULT_VENDOR_CATEGORIES = ["Suppliers","Installers / Subs","Electricians","Permitting Offices","Delivery / Equipment Rental","Other"];
+
+// ============================================================
+// SMALL SHARED COMPONENTS
+// ============================================================
+function Icon(name, size, color) {
+  size = size || 18; color = color || "currentColor";
+  const paths = {
+    home: "M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10",
+    grid: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+    tasks: "M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11",
+    dollar: "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+    calendar: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
+    quote: "M7 8h4v6H7a2 2 0 01-2-2V8m10 0h4v6h-4a2 2 0 01-2-2V8",
+    users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75",
+    plus: "M12 5v14M5 12h14",
+    x: "M18 6L6 18M6 6l18 18",
+    edit: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+    trash: "M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z",
+    chevRight: "M9 18l6-6-6-6",
+    chevLeft: "M15 18l-6-6 6-6",
+    settings: "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z",
+    check: "M20 6L9 17l-5-5",
+    logout: "M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9",
+    phone: "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
+    mail: "M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zM22 6l-10 7L2 6",
+  };
+  return e("svg", {width:size, height:size, viewBox:"0 0 24 24", fill:"none", stroke:color, strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round"},
+    e("path", {d: paths[name] || ""}));
+}
+
+function Toast({ toasts }) {
+  return e("div", {style:{position:"fixed", bottom:20, left:"50%", transform:"translateX(-50%)", zIndex:9999, display:"flex", flexDirection:"column", gap:8, alignItems:"center"}},
+    toasts.map(t => e("div", {key:t.id, style:{
+      background: t.type === "error" ? "#3a1116" : "#132318",
+      border: `1px solid ${t.type === "error" ? C.maroon : C.green}`,
+      color: t.type === "error" ? "#ff8a90" : "#7ee8b8",
+      padding:"10px 16px", borderRadius:8, fontSize:13, fontWeight:600,
+      animation:"toastIn 0.2s ease-out", boxShadow:"0 4px 20px rgba(0,0,0,0.4)"
+    }}, t.msg))
+  );
+}
+
+function StatCard({ label, value, color }) {
+  return e("div", {style:{...S.card, flex:1, minWidth:120, marginBottom:0}},
+    e("div", {style:S.label}, label),
+    e("div", {style:{fontSize:22, fontWeight:900, color: color || C.white, letterSpacing:"-0.5px"}}, value)
+  );
+}
+
+function ProgressBar({ pct, color }) {
+  return e("div", {style:{width:"100%", height:6, background:C.inputBg, borderRadius:3, overflow:"hidden"}},
+    e("div", {style:{width:`${Math.min(100,Math.max(0,pct))}%`, height:"100%", background: color || C.red, transition:"width 0.3s"}})
+  );
+}
+
+function Badge({ text, color, bg }) {
+  return e("span", {style:{
+    fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:6,
+    color: color || C.white, background: bg || "rgba(255,255,255,0.08)",
+    textTransform:"uppercase", letterSpacing:"0.04em"
+  }}, text);
+}
+// ============================================================
+// MODAL SHELL
+// ============================================================
+function ModalShell({ title, onClose, children, wide }) {
+  return e("div", {style:{position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:16},
+    onClick: (ev) => { if (ev.target === ev.currentTarget) onClose(); }},
+    e("div", {style:{background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:20, width:"100%", maxWidth: wide ? 560 : 420, maxHeight:"88vh", overflowY:"auto"}},
+      e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}},
+        e("div", {style:{fontSize:16, fontWeight:800, color:C.white}}, title),
+        e("div", {onClick:onClose, style:{cursor:"pointer", color:C.gray, padding:4}}, Icon("x", 20))
+      ),
+      children
+    )
+  );
+}
+
+// ============================================================
+// PROJECT MODAL
+// ============================================================
+function ProjectModal({ project, onSave, onClose }) {
+  const [f, setF] = useState(project || { id:"", name:"", contractValue:"", materialsBudget:"", depositReceived:"", description:"", status:"Lead" });
+  const upd = (k,v) => setF(prev => ({...prev, [k]:v}));
+  const isEdit = !!project;
+  return e(ModalShell, {title: isEdit ? "Edit Job" : "New Installation Job", onClose},
+    e("div", {style:{display:"flex", flexDirection:"column", gap:12}},
+      e("div", null, e("label", {style:S.label}, "Job / Client Name"),
+        e("input", {style:S.input, autoFocus:true, value:f.name, onChange:ev=>upd("name",ev.target.value), placeholder:"e.g. Thompson Residence Pergola"})),
+      e("div", null, e("label", {style:S.label}, "Location / Notes"),
+        e("input", {style:S.input, value:f.description, onChange:ev=>upd("description",ev.target.value), placeholder:"e.g. Midlothian, VA — Motorized Louver Pergola"})),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Contract Value"),
+          e("input", {style:S.input, type:"number", value:f.contractValue, onChange:ev=>upd("contractValue",ev.target.value)})),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Materials/Labor Budget"),
+          e("input", {style:S.input, type:"number", value:f.materialsBudget, onChange:ev=>upd("materialsBudget",ev.target.value)}))
+      ),
+      e("div", null, e("label", {style:S.label}, "Deposit Received"),
+        e("input", {style:S.input, type:"number", value:f.depositReceived, onChange:ev=>upd("depositReceived",ev.target.value)})),
+      e("div", null, e("label", {style:S.label}, "Status"),
+        e("select", {style:S.input, value:f.status, onChange:ev=>upd("status",ev.target.value)},
+          PROJECT_STATUSES.map(s => e("option", {key:s, value:s}, s)))),
+      e("div", {style:{display:"flex", gap:10, marginTop:8}},
+        e("button", {style:{...S.btn(), flex:1}, onClick:() => {
+          if (!f.name.trim()) return;
+          const id = f.id || genId(f.name.toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,24));
+          onSave({...f, id, contractValue:parseFloat(f.contractValue)||0, materialsBudget:parseFloat(f.materialsBudget)||0, depositReceived:parseFloat(f.depositReceived)||0});
+        }}, isEdit ? "Save Changes" : "Create Job"),
+        e("button", {style:S.btn("ghost"), onClick:onClose}, "Cancel")
+      )
+    )
+  );
+}
+
+// ============================================================
+// EXPENSE MODAL
+// ============================================================
+function ExpenseModal({ expense, onSave, onClose }) {
+  const initial = expense
+    ? (() => {
+        const parts = (expense.category || "Materials").split(":");
+        return {...expense, category: parts[0].trim(), subcategory: parts[1] ? parts[1].trim() : ""};
+      })()
+    : { id:"", description:"", amount:"", date: new Date().toISOString().slice(0,10), category:"Materials", subcategory:"", vendor:"", notes:"" };
+  const [f, setF] = useState(initial);
+  const upd = (k,v) => setF(prev => ({...prev, [k]:v}));
+  const isEdit = !!expense;
+  const subcats = EXPENSE_CATEGORIES[f.category] || [];
+  return e(ModalShell, {title: isEdit ? "Edit Expense" : "Add Expense", onClose},
+    e("div", {style:{display:"flex", flexDirection:"column", gap:12}},
+      e("div", null, e("label", {style:S.label}, "Description"),
+        e("input", {style:S.input, autoFocus:true, value:f.description, onChange:ev=>upd("description",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Amount"),
+          e("input", {style:S.input, type:"number", value:f.amount, onChange:ev=>upd("amount",ev.target.value)})),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Date"),
+          e("input", {style:S.input, type:"date", value:f.date, onChange:ev=>upd("date",ev.target.value)}))
+      ),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Category"),
+          e("select", {style:S.input, value:f.category, onChange:ev=>upd("category",ev.target.value)},
+            Object.keys(EXPENSE_CATEGORIES).map(c => e("option", {key:c, value:c}, c)))),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Subcategory"),
+          e("select", {style:S.input, value:f.subcategory, onChange:ev=>upd("subcategory",ev.target.value)},
+            e("option", {value:""}, "—"),
+            subcats.map(sc => e("option", {key:sc, value:sc}, sc))))
+      ),
+      e("div", null, e("label", {style:S.label}, "Vendor"),
+        e("input", {style:S.input, value:f.vendor, onChange:ev=>upd("vendor",ev.target.value)})),
+      e("div", null, e("label", {style:S.label}, "Notes"),
+        e("input", {style:S.input, value:f.notes, onChange:ev=>upd("notes",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:10, marginTop:8}},
+        e("button", {style:{...S.btn(), flex:1}, onClick:() => {
+          if (!f.description.trim() || !f.amount) return;
+          onSave({...f, id: f.id || genId("exp"), amount: parseFloat(f.amount)||0,
+            category: f.subcategory ? `${f.category}: ${f.subcategory}` : f.category });
+        }}, isEdit ? "Save Changes" : "Add Expense"),
+        e("button", {style:S.btn("ghost"), onClick:onClose}, "Cancel")
+      )
+    )
+  );
+}
+
+// ============================================================
+// TASK MODAL
+// ============================================================
+function TaskModal({ task, milestones, onSave, onClose }) {
+  const [f, setF] = useState(task || { id:"", task:"", status:"To Do", assignee:"", dueDate:"", notes:"", category:"Install", priority:"Med", milestone:"" });
+  const upd = (k,v) => setF(prev => ({...prev, [k]:v}));
+  const isEdit = !!task;
+  return e(ModalShell, {title: isEdit ? "Edit Task" : "Add Task", onClose},
+    e("div", {style:{display:"flex", flexDirection:"column", gap:12}},
+      e("div", null, e("label", {style:S.label}, "Task"),
+        e("input", {style:S.input, autoFocus:true, value:f.task, onChange:ev=>upd("task",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Status"),
+          e("select", {style:S.input, value:f.status, onChange:ev=>upd("status",ev.target.value)},
+            Object.keys(TASK_STATUS_COLORS).map(s => e("option", {key:s, value:s}, s)))),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Priority"),
+          e("select", {style:S.input, value:f.priority, onChange:ev=>upd("priority",ev.target.value)},
+            PRIORITIES.map(p => e("option", {key:p, value:p}, p))))
+      ),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Category"),
+          e("select", {style:S.input, value:f.category, onChange:ev=>upd("category",ev.target.value)},
+            TASK_CATEGORIES.map(c => e("option", {key:c, value:c}, c)))),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Due Date"),
+          e("input", {style:S.input, type:"date", value:f.dueDate, onChange:ev=>upd("dueDate",ev.target.value)}))
+      ),
+      e("div", null, e("label", {style:S.label}, "Assignee"),
+        e("input", {style:S.input, value:f.assignee, onChange:ev=>upd("assignee",ev.target.value)})),
+      milestones && milestones.length > 0 && e("div", null, e("label", {style:S.label}, "Milestone"),
+        e("select", {style:S.input, value:f.milestone||"", onChange:ev=>upd("milestone",ev.target.value)},
+          e("option", {value:""}, "— None —"),
+          milestones.map(m => e("option", {key:m.id, value:m.id}, `${fmtDate(m.date)} — ${m.week}`)))),
+      e("div", null, e("label", {style:S.label}, "Notes"),
+        e("textarea", {style:{...S.input, minHeight:60, resize:"vertical"}, value:f.notes, onChange:ev=>upd("notes",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:10, marginTop:8}},
+        e("button", {style:{...S.btn(), flex:1}, onClick:() => {
+          if (!f.task.trim()) return;
+          onSave({...f, id: f.id || genId("tsk")});
+        }}, isEdit ? "Save Changes" : "Add Task"),
+        e("button", {style:S.btn("ghost"), onClick:onClose}, "Cancel")
+      )
+    )
+  );
+}
+
+// ============================================================
+// QUOTE MODAL
+// ============================================================
+function QuoteModal({ quote, onSave, onClose }) {
+  const [f, setF] = useState(quote || { id:"", item:"", vendor:"", amount:"", status:"Pending", category:"Materials", notes:"" });
+  const upd = (k,v) => setF(prev => ({...prev, [k]:v}));
+  const isEdit = !!quote;
+  return e(ModalShell, {title: isEdit ? "Edit Quote" : "Add Quote", onClose},
+    e("div", {style:{display:"flex", flexDirection:"column", gap:12}},
+      e("div", null, e("label", {style:S.label}, "Item"),
+        e("input", {style:S.input, autoFocus:true, value:f.item, onChange:ev=>upd("item",ev.target.value), placeholder:"e.g. Motorized Louvers"})),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Vendor"),
+          e("input", {style:S.input, value:f.vendor, onChange:ev=>upd("vendor",ev.target.value)})),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Amount"),
+          e("input", {style:S.input, type:"number", value:f.amount, onChange:ev=>upd("amount",ev.target.value)}))
+      ),
+      e("div", null, e("label", {style:S.label}, "Category"),
+        e("select", {style:S.input, value:f.category, onChange:ev=>upd("category",ev.target.value)},
+          Object.keys(EXPENSE_CATEGORIES).map(c => e("option", {key:c, value:c}, c)))),
+      e("div", null, e("label", {style:S.label}, "Notes"),
+        e("input", {style:S.input, value:f.notes, onChange:ev=>upd("notes",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:10, marginTop:8}},
+        e("button", {style:{...S.btn(), flex:1}, onClick:() => {
+          if (!f.item.trim() || !f.amount) return;
+          onSave({...f, id: f.id || genId("q"), amount: parseFloat(f.amount)||0});
+        }}, isEdit ? "Save Changes" : "Add Quote"),
+        e("button", {style:S.btn("ghost"), onClick:onClose}, "Cancel")
+      )
+    )
+  );
+}
+
+// ============================================================
+// MILESTONE MODAL
+// ============================================================
+function MilestoneModal({ milestone, onSave, onClose }) {
+  const [f, setF] = useState(milestone || { id:"", date:"", week:"", items:[] });
+  const [itemText, setItemText] = useState("");
+  const [itemType, setItemType] = useState("Install");
+  const upd = (k,v) => setF(prev => ({...prev, [k]:v}));
+  const isEdit = !!milestone;
+  const addItem = () => {
+    if (!itemText.trim()) return;
+    setF(prev => ({...prev, items: [...prev.items, {type:itemType, text:itemText}]}));
+    setItemText("");
+  };
+  const removeItem = (idx) => setF(prev => ({...prev, items: prev.items.filter((_,i)=>i!==idx)}));
+  return e(ModalShell, {title: isEdit ? "Edit Milestone" : "Add Milestone", onClose, wide:true},
+    e("div", {style:{display:"flex", flexDirection:"column", gap:12}},
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Target Date"),
+          e("input", {style:S.input, type:"date", value:f.date, onChange:ev=>upd("date",ev.target.value)})),
+        e("div", {style:{flex:2}}, e("label", {style:S.label}, "Phase Name"),
+          e("input", {style:S.input, value:f.week, onChange:ev=>upd("week",ev.target.value), placeholder:"e.g. Footings & Framing"}))
+      ),
+      e("div", null,
+        e("label", {style:S.label}, "Checklist Items"),
+        e("div", {style:{display:"flex", flexDirection:"column", gap:6, marginBottom:10}},
+          f.items.map((it, idx) => e("div", {key:idx, style:{display:"flex", alignItems:"center", gap:8, background:C.inputBg, border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px"}},
+            e(Badge, {text:it.type, bg:"rgba(255,255,255,0.06)", color:C.offwhite}),
+            e("div", {style:{flex:1, fontSize:13}}, it.text),
+            e("div", {onClick:()=>removeItem(idx), style:{cursor:"pointer", color:C.gray}}, Icon("x", 14))
+          ))
+        ),
+        e("div", {style:{display:"flex", gap:8}},
+          e("select", {style:{...S.input, width:110, flexShrink:0}, value:itemType, onChange:ev=>setItemType(ev.target.value)},
+            TASK_CATEGORIES.map(c => e("option", {key:c, value:c}, c))),
+          e("input", {style:S.input, value:itemText, onChange:ev=>setItemText(ev.target.value), placeholder:"Checklist item...",
+            onKeyDown: ev => { if (ev.key === "Enter") { ev.preventDefault(); addItem(); } }}),
+          e("button", {style:S.btn("ghost"), onClick:addItem}, Icon("plus", 16))
+        )
+      ),
+      e("div", {style:{display:"flex", gap:10, marginTop:8}},
+        e("button", {style:{...S.btn(), flex:1}, onClick:() => {
+          if (!f.week.trim()) return;
+          onSave({...f, id: f.id || genId("ms")});
+        }}, isEdit ? "Save Changes" : "Add Milestone"),
+        e("button", {style:S.btn("ghost"), onClick:onClose}, "Cancel")
+      )
+    )
+  );
+}
+
+// ============================================================
+// VENDOR MODAL
+// ============================================================
+function VendorModal({ vendor, categories, onSave, onClose }) {
+  const [f, setF] = useState(vendor || { id:"", name:"", phone:"", email:"", notes:"", category: categories[0] || "Suppliers" });
+  const upd = (k,v) => setF(prev => ({...prev, [k]:v}));
+  const isEdit = !!vendor;
+  return e(ModalShell, {title: isEdit ? "Edit Vendor" : "Add Vendor", onClose},
+    e("div", {style:{display:"flex", flexDirection:"column", gap:12}},
+      e("div", null, e("label", {style:S.label}, "Name"),
+        e("input", {style:S.input, autoFocus:true, value:f.name, onChange:ev=>upd("name",ev.target.value)})),
+      e("div", null, e("label", {style:S.label}, "Category"),
+        e("select", {style:S.input, value:f.category, onChange:ev=>upd("category",ev.target.value)},
+          categories.map(c => e("option", {key:c, value:c}, c)))),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Phone"),
+          e("input", {style:S.input, value:f.phone, onChange:ev=>upd("phone",ev.target.value)})),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Email"),
+          e("input", {style:S.input, value:f.email, onChange:ev=>upd("email",ev.target.value)}))
+      ),
+      e("div", null, e("label", {style:S.label}, "Notes"),
+        e("textarea", {style:{...S.input, minHeight:60, resize:"vertical"}, value:f.notes, onChange:ev=>upd("notes",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:10, marginTop:8}},
+        e("button", {style:{...S.btn(), flex:1}, onClick:() => {
+          if (!f.name.trim()) return;
+          onSave({...f, id: f.id || genId("v")});
+        }}, isEdit ? "Save Changes" : "Add Vendor"),
+        e("button", {style:S.btn("ghost"), onClick:onClose}, "Cancel")
+      )
+    )
+  );
+}
+
+// ============================================================
+// MGMT TASK MODAL (general/pipeline tasks, simpler shape)
+// ============================================================
+function MgmtTaskModal({ item, onSave, onClose }) {
+  const [f, setF] = useState(item || { id:"", task:"", status:"To Do", assignee:"", notes:"" });
+  const upd = (k,v) => setF(prev => ({...prev, [k]:v}));
+  const isEdit = !!item;
+  return e(ModalShell, {title: isEdit ? "Edit Task" : "Add Pipeline Task", onClose},
+    e("div", {style:{display:"flex", flexDirection:"column", gap:12}},
+      e("div", null, e("label", {style:S.label}, "Task"),
+        e("input", {style:S.input, autoFocus:true, value:f.task, onChange:ev=>upd("task",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:12}},
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Status"),
+          e("select", {style:S.input, value:f.status, onChange:ev=>upd("status",ev.target.value)},
+            Object.keys(TASK_STATUS_COLORS).map(s => e("option", {key:s, value:s}, s)))),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Assignee"),
+          e("input", {style:S.input, value:f.assignee, onChange:ev=>upd("assignee",ev.target.value)}))
+      ),
+      e("div", null, e("label", {style:S.label}, "Notes"),
+        e("input", {style:S.input, value:f.notes, onChange:ev=>upd("notes",ev.target.value)})),
+      e("div", {style:{display:"flex", gap:10, marginTop:8}},
+        e("button", {style:{...S.btn(), flex:1}, onClick:() => {
+          if (!f.task.trim()) return;
+          onSave({...f, id: f.id || genId("mt")});
+        }}, isEdit ? "Save Changes" : "Add Task"),
+        e("button", {style:S.btn("ghost"), onClick:onClose}, "Cancel")
+      )
+    )
+  );
+}
+// ============================================================
+// LOGIN SCREEN
+// ============================================================
+function LoginScreen({ onLogin, error }) {
+  const [pin, setPin] = useState("");
+  return e("div", {style:{height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:C.bg, flexDirection:"column", padding:20}},
+    e("div", {style:{width:64, height:64, borderRadius:16, background:`linear-gradient(135deg, ${C.red}, ${C.redDark})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, boxShadow:"0 8px 30px rgba(229,25,43,0.35)"}},
+      e("div", {style:{fontSize:28, fontWeight:900, color:"#fff"}}, "P")
+    ),
+    e("div", {style:{fontSize:24, fontWeight:900, color:C.white, letterSpacing:"-0.5px", marginBottom:4}}, COMPANY_NAME),
+    e("div", {style:{fontSize:13, color:C.gray, marginBottom:28}}, "Job Tracker"),
+    e("div", {style:{width:"100%", maxWidth:280}},
+      e("input", {
+        style:{...S.input, textAlign:"center", fontSize:20, letterSpacing:"0.3em", padding:"14px 12px"},
+        type:"password", inputMode:"numeric", placeholder:"••••", autoFocus:true, value:pin,
+        onChange: ev => setPin(ev.target.value),
+        onKeyDown: ev => { if (ev.key === "Enter") onLogin(pin); }
+      }),
+      error && e("div", {style:{color:"#ef5a63", fontSize:12, marginTop:8, textAlign:"center"}}, error),
+      e("button", {style:{...S.btn(), width:"100%", marginTop:14}, onClick:()=>onLogin(pin)}, "Enter")
+    )
+  );
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function Sidebar({ view, activeId, projects, navTo, selectProject, enterManagement }) {
+  const visibleProjects = projects.filter(p => !(p.description||"").includes("No budget"));
+  return e("div", {className:"desktop-sidebar", style:S.sidebar},
+    e("div", {style:S.sideItem(view==="home" && !activeId), onClick:()=>navTo("home")}, Icon("home",16), "Home"),
+    e("div", {style:S.sideItem(view==="management"), onClick:enterManagement}, Icon("settings",16), "Management"),
+    e("div", {onClick:()=>navTo("vendors"), style:S.sideItem(view==="vendors")}, Icon("users",16), "Vendors"),
+    e("div", {style:S.sideLabel}, "Jobs"),
+    visibleProjects.map(p => e("div", {key:p.id},
+      e("div", {style:S.sideItem(activeId===p.id && view==="dashboard"), onClick:()=>selectProject(p.id,"dashboard")}, Icon("grid",14), p.name),
+      activeId===p.id && e("div", {style:{paddingLeft:20}},
+        e("div", {style:{...S.sideItem(view==="tasks"), fontSize:12}, onClick:()=>navTo("tasks")}, Icon("tasks",13), "Tasks"),
+        e("div", {style:{...S.sideItem(view==="expenses"), fontSize:12}, onClick:()=>navTo("expenses")}, Icon("dollar",13), "Expenses"),
+        e("div", {style:{...S.sideItem(view==="quotes"), fontSize:12}, onClick:()=>navTo("quotes")}, Icon("quote",13), "Quotes"),
+        e("div", {style:{...S.sideItem(view==="planning"), fontSize:12}, onClick:()=>navTo("planning")}, Icon("calendar",13), "Planning")
+      )
+    ))
+  );
+}
+
+// ============================================================
+// BOTTOM NAV (mobile)
+// ============================================================
+function BottomNav({ view, activeId, navTo, enterManagement }) {
+  const items = [
+    {key:"home", icon:"home", label:"Home", onClick:()=>navTo("home")},
+    {key:"management", icon:"settings", label:"Mgmt", onClick:enterManagement},
+    {key:"vendors", icon:"users", label:"Vendors", onClick:()=>navTo("vendors")},
+  ];
+  if (activeId) {
+    items.push({key:"tasks", icon:"tasks", label:"Tasks", onClick:()=>navTo("tasks")});
+    items.push({key:"expenses", icon:"dollar", label:"Costs", onClick:()=>navTo("expenses")});
+  }
+  return e("div", {className:"bottom-nav", style:{position:"fixed", bottom:0, left:0, right:0, background:C.card, borderTop:`1px solid ${C.border}`, padding:"8px 4px", zIndex:100, justifyContent:"space-around"}},
+    items.map(it => e("div", {key:it.key, onClick:it.onClick, style:{display:"flex", flexDirection:"column", alignItems:"center", gap:2, padding:"4px 8px", cursor:"pointer", color: view===it.key ? C.red : C.gray}},
+      Icon(it.icon, 20), e("div", {style:{fontSize:10, fontWeight:600}}, it.label)
+    ))
+  );
+}
+
+// ============================================================
+// HOME VIEW
+// ============================================================
+function HomeView({ projects, mgmtTasks, enterManagement, selectProject, setShowProjectModal }) {
+  const visibleProjects = projects.filter(p => !(p.description||"").includes("No budget"));
+  const openMgmtCount = (mgmtTasks||[]).filter(t => t.status !== "Done").length;
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}},
+      e("div", {style:{fontSize:20, fontWeight:900, color:C.white}}, "Jobs"),
+      e("button", {style:S.btn(), onClick:()=>setShowProjectModal(true)}, "+ New Job")
+    ),
+    e("div", {
+      onClick: enterManagement,
+      style:{
+        background:"linear-gradient(135deg,#1c1414,#120a0a)",
+        border:`1px solid ${C.redDark}`,
+        borderRadius:12, padding:16, marginBottom:16, cursor:"pointer",
+        display:"flex", justifyContent:"space-between", alignItems:"center"
+      }},
+      e("div", null,
+        e("div", {style:{fontSize:15, fontWeight:800, color:C.white}}, "Management"),
+        e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, "Pipeline, general tasks & company expenses")
+      ),
+      e("div", {style:{display:"flex", alignItems:"center", gap:10}},
+        openMgmtCount > 0 && e(Badge, {text:`${openMgmtCount} open`, color:C.red, bg:C.redSoft}),
+        Icon("chevRight", 18, C.gray)
+      )
+    ),
+    visibleProjects.length === 0 && e("div", {style:{...S.card, textAlign:"center", color:C.gray, padding:40}}, "No jobs yet. Create your first installation job to get started."),
+    visibleProjects.map(p => {
+      const spendPct = p.materialsBudget ? 0 : 0; // computed live in dashboard; home just shows contract info
+      return e("div", {key:p.id, onClick:()=>selectProject(p.id,"dashboard"), style:{...S.card, cursor:"pointer"}},
+        e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-start"}},
+          e("div", null,
+            e("div", {style:{fontSize:15, fontWeight:800, color:C.white}}, p.name),
+            e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, p.description || "—")
+          ),
+          e(Badge, {text:p.status||"Active", color: p.status==="Completed"?C.green:p.status==="Lead"?C.amber:C.red, bg: p.status==="Completed"?"rgba(29,185,120,0.12)":p.status==="Lead"?"rgba(242,160,7,0.12)":C.redSoft})
+        ),
+        e("div", {style:{display:"flex", gap:20, marginTop:12}},
+          e("div", null, e("div", {style:S.label}, "Contract"), e("div", {style:{fontSize:15, fontWeight:700, color:C.white}}, fmtMoney(p.contractValue))),
+          e("div", null, e("div", {style:S.label}, "Budget"), e("div", {style:{fontSize:15, fontWeight:700, color:C.white}}, fmtMoney(p.materialsBudget)))
+        )
+      );
+    })
+  );
+}
+
+// ============================================================
+// MANAGEMENT VIEW
+// ============================================================
+function ManagementView({ mgmtTasks, setMgmtTasks, mgmtExpenses, addExpense, updateExpense, deleteExpense, showMgmtTaskModal, setShowMgmtTaskModal, showToast }) {
+  const [editItem, setEditItem] = useState(null);
+  const [showAddExp, setShowAddExp] = useState(false);
+  const [editExp, setEditExp] = useState(null);
+  const cycleStatus = (t) => {
+    const order = ["To Do","In Progress","Blocked","Done"];
+    const next = order[(order.indexOf(t.status)+1) % order.length];
+    setMgmtTasks(prev => prev.map(x => x.id===t.id ? {...x, status:next} : x));
+  };
+  const totalSpend = (mgmtExpenses||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{fontSize:20, fontWeight:900, color:C.white, marginBottom:16}}, "Management"),
+    e("div", {style:{display:"flex", gap:12, marginBottom:16, flexWrap:"wrap"}},
+      e(StatCard, {label:"Open Pipeline Tasks", value: (mgmtTasks||[]).filter(t=>t.status!=="Done").length}),
+      e(StatCard, {label:"General Expenses", value: fmtMoney(totalSpend), color:C.red})
+    ),
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}},
+      e("div", {style:{fontSize:14, fontWeight:800, color:C.white}}, "Pipeline / General Tasks"),
+      e("button", {style:S.btn("ghost"), onClick:()=>setShowMgmtTaskModal(true)}, "+ Task")
+    ),
+    (mgmtTasks||[]).length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No pipeline tasks yet."),
+    (mgmtTasks||[]).map(t => e("div", {key:t.id, style:{...S.card, display:"flex", alignItems:"center", gap:12}},
+      e("div", {onClick:()=>cycleStatus(t), style:{cursor:"pointer", flexShrink:0}}, e(Badge, {text:t.status, color:"#0a0a0a", bg:TASK_STATUS_COLORS[t.status]})),
+      e("div", {style:{flex:1}},
+        e("div", {style:{fontSize:14, fontWeight:600, color:C.white}}, t.task),
+        (t.assignee || t.notes) && e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, [t.assignee, t.notes].filter(Boolean).join(" — "))
+      ),
+      e("div", {onClick:()=>setEditItem(t), style:{cursor:"pointer", color:C.gray}}, Icon("edit",15)),
+      e("div", {onClick:()=>setMgmtTasks(prev=>prev.filter(x=>x.id!==t.id)), style:{cursor:"pointer", color:C.gray}}, Icon("trash",15))
+    )),
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", margin:"24px 0 10px"}},
+      e("div", {style:{fontSize:14, fontWeight:800, color:C.white}}, "General Expenses"),
+      e("button", {style:S.btn("ghost"), onClick:()=>setShowAddExp(true)}, "+ Expense")
+    ),
+    (mgmtExpenses||[]).length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No general expenses logged yet."),
+    (mgmtExpenses||[]).map(x => e("div", {key:x.id, style:{...S.card, display:"flex", justifyContent:"space-between", alignItems:"center"}},
+      e("div", {style:{flex:1}},
+        e("div", {style:{fontSize:14, fontWeight:700, color:C.white}}, x.description),
+        e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, [fmtDate(x.date), x.category, x.vendor].filter(Boolean).join(" · "))
+      ),
+      e("div", {style:{fontSize:15, fontWeight:800, color:C.white, marginRight:14}}, fmtMoney(x.amount)),
+      e("div", {onClick:()=>setEditExp(x), style:{cursor:"pointer", color:C.gray, marginRight:10}}, Icon("edit",15)),
+      e("div", {onClick:()=>deleteExpense(x.id), style:{cursor:"pointer", color:C.gray}}, Icon("trash",15))
+    )),
+    editItem && e(MgmtTaskModal, {item:editItem, onClose:()=>setEditItem(null), onSave:(t)=>{
+      setMgmtTasks(prev => prev.map(x=>x.id===t.id?t:x)); setEditItem(null);
+    }}),
+    showMgmtTaskModal && e(MgmtTaskModal, {onClose:()=>setShowMgmtTaskModal(false), onSave:(t)=>{
+      setMgmtTasks(prev => [...prev, t]); setShowMgmtTaskModal(false);
+    }}),
+    showAddExp && e(ExpenseModal, {onClose:()=>setShowAddExp(false), onSave:(x)=>{ addExpense(x); setShowAddExp(false); }}),
+    editExp && e(ExpenseModal, {expense:editExp, onClose:()=>setEditExp(null), onSave:(x)=>{ updateExpense(x); setEditExp(null); }})
+  );
+}
+
+// ============================================================
+// VENDORS VIEW
+// ============================================================
+function VendorsView({ vendors, categories, setVendors, setCategories, showToast }) {
+  const [filter, setFilter] = useState("All");
+  const [showAdd, setShowAdd] = useState(false);
+  const [editVendor, setEditVendor] = useState(null);
+  const [newCat, setNewCat] = useState("");
+  const [showNewCat, setShowNewCat] = useState(false);
+
+  const allVendors = [];
+  Object.keys(vendors).forEach(cat => {
+    (vendors[cat]||[]).forEach(v => allVendors.push({...v, category:cat}));
+  });
+  const filtered = filter === "All" ? allVendors : allVendors.filter(v => v.category === filter);
+
+  const saveVendor = (v) => {
+    setVendors(prev => {
+      const next = {...prev};
+      // remove from all categories first (in case category changed on edit)
+      Object.keys(next).forEach(c => { next[c] = (next[c]||[]).filter(x => x.id !== v.id); });
+      next[v.category] = [...(next[v.category]||[]), {id:v.id, name:v.name, phone:v.phone, email:v.email, notes:v.notes}];
+      return next;
+    });
+  };
+
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}},
+      e("div", {style:{fontSize:20, fontWeight:900, color:C.white}}, "Vendors"),
+      e("button", {style:S.btn(), onClick:()=>setShowAdd(true)}, "+ Vendor")
+    ),
+    e("div", {style:{display:"flex", gap:8, flexWrap:"wrap", marginBottom:16}},
+      ["All", ...categories].map(c => e("div", {key:c, onClick:()=>setFilter(c), style:{
+        padding:"6px 12px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer",
+        background: filter===c ? C.red : "transparent", color: filter===c ? "#fff" : C.gray,
+        border:`1px solid ${filter===c ? C.red : C.border}`
+      }}, c)),
+      e("div", {onClick:()=>setShowNewCat(true), style:{padding:"6px 12px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer", color:C.gray, border:`1px dashed ${C.border}`}}, "+ Category")
+    ),
+    showNewCat && e("div", {style:{display:"flex", gap:8, marginBottom:16}},
+      e("input", {style:S.input, value:newCat, onChange:ev=>setNewCat(ev.target.value), placeholder:"New category name", autoFocus:true}),
+      e("button", {style:S.btn("ghost"), onClick:()=>{
+        if (newCat.trim() && !categories.includes(newCat.trim())) setCategories(prev=>[...prev,newCat.trim()]);
+        setNewCat(""); setShowNewCat(false);
+      }}, "Add")
+    ),
+    filtered.length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No vendors in this category yet."),
+    filtered.map(v => e("div", {key:v.id, style:{...S.card, display:"flex", justifyContent:"space-between", alignItems:"flex-start"}},
+      e("div", {style:{flex:1}},
+        e("div", {style:{display:"flex", alignItems:"center", gap:8}},
+          e("div", {style:{fontSize:14, fontWeight:700, color:C.white}}, v.name),
+          e(Badge, {text:v.category, bg:"rgba(255,255,255,0.06)", color:C.offwhite})
+        ),
+        e("div", {style:{display:"flex", gap:14, marginTop:6, flexWrap:"wrap"}},
+          v.phone && e("div", {style:{fontSize:12, color:C.gray, display:"flex", alignItems:"center", gap:4}}, Icon("phone",12), v.phone),
+          v.email && e("div", {style:{fontSize:12, color:C.gray, display:"flex", alignItems:"center", gap:4}}, Icon("mail",12), v.email)
+        ),
+        v.notes && e("div", {style:{fontSize:12, color:C.grayDark, marginTop:6}}, v.notes)
+      ),
+      e("div", {style:{display:"flex", gap:10}},
+        e("div", {onClick:()=>setEditVendor(v), style:{cursor:"pointer", color:C.gray}}, Icon("edit",15)),
+        e("div", {onClick:()=>setVendors(prev=>{
+          const next={...prev}; next[v.category]=(next[v.category]||[]).filter(x=>x.id!==v.id); return next;
+        }), style:{cursor:"pointer", color:C.gray}}, Icon("trash",15))
+      )
+    )),
+    showAdd && e(VendorModal, {categories, onClose:()=>setShowAdd(false), onSave:(v)=>{ saveVendor(v); setShowAdd(false); }}),
+    editVendor && e(VendorModal, {vendor:editVendor, categories, onClose:()=>setEditVendor(null), onSave:(v)=>{ saveVendor(v); setEditVendor(null); }})
+  );
+}
+
+// ============================================================
+// DASHBOARD VIEW
+// ============================================================
+function DashboardView({ project, expenses, tasks, quotes, onEditProject }) {
+  const totalSpend = expenses.reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const budget = parseFloat(project.materialsBudget)||0;
+  const pct = budget > 0 ? (totalSpend/budget)*100 : 0;
+  const doneCount = tasks.filter(t=>t.status==="Done").length;
+  const byCategory = {};
+  expenses.forEach(x => {
+    const parentCat = (x.category||"Other").split(":")[0].trim();
+    byCategory[parentCat] = (byCategory[parentCat]||0) + (parseFloat(x.amount)||0);
+  });
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4}},
+      e("div", {style:{fontSize:20, fontWeight:900, color:C.white}}, project.name),
+      e("div", {onClick:onEditProject, style:{cursor:"pointer", color:C.gray, padding:4}}, Icon("edit",17))
+    ),
+    e("div", {style:{fontSize:13, color:C.gray, marginBottom:16}}, project.description),
+    e("div", {style:{display:"flex", gap:12, marginBottom:16, flexWrap:"wrap"}},
+      e(StatCard, {label:"Contract Value", value: fmtMoney(project.contractValue)}),
+      e(StatCard, {label:"Budget Spent", value: fmtMoney(totalSpend), color: pct > 100 ? "#ef5a63" : C.white}),
+      e(StatCard, {label:"Tasks Done", value: `${doneCount}/${tasks.length}`}),
+      e(StatCard, {label:"Deposit Received", value: fmtMoney(project.depositReceived)})
+    ),
+    e("div", {style:S.card},
+      e("div", {style:{display:"flex", justifyContent:"space-between", marginBottom:8}},
+        e("div", {style:{fontSize:13, fontWeight:700, color:C.white}}, "Budget Utilization"),
+        e("div", {style:{fontSize:13, color: pct>100?"#ef5a63":C.gray}}, `${pct.toFixed(0)}%`)
+      ),
+      e(ProgressBar, {pct, color: pct > 100 ? "#ef5a63" : C.red})
+    ),
+    Object.keys(byCategory).length > 0 && e("div", {style:S.card},
+      e("div", {style:{fontSize:13, fontWeight:700, color:C.white, marginBottom:12}}, "Spend by Category"),
+      Object.entries(byCategory).sort((a,b)=>b[1]-a[1]).map(([cat,amt]) => e("div", {key:cat, style:{marginBottom:8}},
+        e("div", {style:{display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:3}},
+          e("div", {style:{color:C.offwhite}}, cat), e("div", {style:{color:C.gray}}, fmtMoney(amt))),
+        e(ProgressBar, {pct: totalSpend ? (amt/totalSpend)*100 : 0, color:C.red})
+      ))
+    ),
+    quotes.length > 0 && e("div", {style:S.card},
+      e("div", {style:{fontSize:13, fontWeight:700, color:C.white, marginBottom:10}}, "Pending Quotes"),
+      quotes.filter(q=>q.status==="Pending").slice(0,5).map(q => e("div", {key:q.id, style:{display:"flex", justifyContent:"space-between", fontSize:13, padding:"6px 0", borderBottom:`1px solid ${C.border}`}},
+        e("div", {style:{color:C.offwhite}}, `${q.item} — ${q.vendor}`), e("div", {style:{color:C.white, fontWeight:700}}, fmtMoney(q.amount))
+      ))
+    )
+  );
+}
+
+// ============================================================
+// EXPENSES VIEW
+// ============================================================
+function ExpensesView({ expenses, addExpense, updateExpense, deleteExpense }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editExp, setEditExp] = useState(null);
+  const total = expenses.reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const sorted = [...expenses].sort((a,b) => (b.date||"").localeCompare(a.date||""));
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}},
+      e("div", null,
+        e("div", {style:{fontSize:20, fontWeight:900, color:C.white}}, "Expenses"),
+        e("div", {style:{fontSize:13, color:C.gray}}, `Total: ${fmtMoney(total)}`)
+      ),
+      e("button", {style:S.btn(), onClick:()=>setShowAdd(true)}, "+ Expense")
+    ),
+    sorted.length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No expenses logged yet."),
+    sorted.map(x => e("div", {key:x.id, style:{...S.card, display:"flex", justifyContent:"space-between", alignItems:"center"}},
+      e("div", {style:{flex:1}},
+        e("div", {style:{fontSize:14, fontWeight:700, color:C.white}}, x.description),
+        e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, [fmtDate(x.date), x.category, x.vendor].filter(Boolean).join(" · "))
+      ),
+      e("div", {style:{fontSize:15, fontWeight:800, color:C.white, marginRight:14}}, fmtMoney(x.amount)),
+      e("div", {onClick:()=>setEditExp(x), style:{cursor:"pointer", color:C.gray, marginRight:10}}, Icon("edit",15)),
+      e("div", {onClick:()=>deleteExpense(x.id), style:{cursor:"pointer", color:C.gray}}, Icon("trash",15))
+    )),
+    showAdd && e(ExpenseModal, {onClose:()=>setShowAdd(false), onSave:(x)=>{ addExpense(x); setShowAdd(false); }}),
+    editExp && e(ExpenseModal, {expense:editExp, onClose:()=>setEditExp(null), onSave:(x)=>{ updateExpense(x); setEditExp(null); }})
+  );
+}
+
+// ============================================================
+// TASKS VIEW
+// ============================================================
+function TasksView({ tasks, milestones, addTask, updateTask, deleteTask }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editTask, setEditTask] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("All");
+
+  const cycleStatus = (t) => {
+    const order = ["To Do","In Progress","Blocked","Done"];
+    const next = order[(order.indexOf(t.status)+1) % order.length];
+    updateTask({...t, status:next});
+  };
+
+  const filtered = filterStatus === "All" ? tasks : tasks.filter(t=>t.status===filterStatus);
+  const sorted = [...filtered].sort((a,b) => {
+    const ov = isOverdue(b.dueDate,b.status) - isOverdue(a.dueDate,a.status);
+    if (ov !== 0) return ov;
+    return (a.dueDate||"9999").localeCompare(b.dueDate||"9999");
+  });
+
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}},
+      e("div", {style:{fontSize:20, fontWeight:900, color:C.white}}, "Tasks"),
+      e("button", {style:S.btn(), onClick:()=>setShowAdd(true)}, "+ Task")
+    ),
+    e("div", {style:{display:"flex", gap:8, flexWrap:"wrap", marginBottom:16}},
+      ["All", ...Object.keys(TASK_STATUS_COLORS)].map(s => e("div", {key:s, onClick:()=>setFilterStatus(s), style:{
+        padding:"6px 12px", borderRadius:20, fontSize:12, fontWeight:600, cursor:"pointer",
+        background: filterStatus===s ? C.red : "transparent", color: filterStatus===s ? "#fff" : C.gray,
+        border:`1px solid ${filterStatus===s ? C.red : C.border}`
+      }}, s))
+    ),
+    sorted.length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No tasks match this filter."),
+    sorted.map(t => {
+      const overdue = isOverdue(t.dueDate, t.status);
+      const ms = milestones.find(m=>m.id===t.milestone);
+      return e("div", {key:t.id, style:{...S.card, display:"flex", alignItems:"flex-start", gap:12}},
+        e("div", {onClick:()=>cycleStatus(t), style:{cursor:"pointer", flexShrink:0, marginTop:2}}, e(Badge, {text:t.status, color:"#0a0a0a", bg:TASK_STATUS_COLORS[t.status]})),
+        e("div", {style:{flex:1}},
+          e("div", {style:{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}},
+            e("div", {style:{fontSize:14, fontWeight:600, color:C.white}}, t.task),
+            t.priority==="High" && e(Badge, {text:"High", color:"#ef5a63", bg:"rgba(143,29,36,0.2)"}),
+            ms && e(Badge, {text:ms.week, color:C.purple, bg:"rgba(139,107,214,0.15)"})
+          ),
+          e("div", {style:{fontSize:12, color: overdue ? "#ef5a63" : C.gray, marginTop:4}},
+            [t.category, t.assignee, t.dueDate ? (overdue ? `Overdue: ${fmtDate(t.dueDate)}` : fmtDate(t.dueDate)) : null].filter(Boolean).join(" · ")),
+          t.notes && e("div", {style:{fontSize:12, color:C.grayDark, marginTop:4}}, t.notes)
+        ),
+        e("div", {onClick:()=>setEditTask(t), style:{cursor:"pointer", color:C.gray}}, Icon("edit",15)),
+        e("div", {onClick:()=>deleteTask(t.id), style:{cursor:"pointer", color:C.gray}}, Icon("trash",15))
+      );
+    }),
+    showAdd && e(TaskModal, {milestones, onClose:()=>setShowAdd(false), onSave:(t)=>{ addTask(t); setShowAdd(false); }}),
+    editTask && e(TaskModal, {task:editTask, milestones, onClose:()=>setEditTask(null), onSave:(t)=>{ updateTask(t); setEditTask(null); }})
+  );
+}
+
+// ============================================================
+// QUOTES VIEW
+// ============================================================
+function QuotesView({ quotes, addQuote, updateQuote, deleteQuote, acceptQuote }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editQuote, setEditQuote] = useState(null);
+  const grouped = {};
+  quotes.forEach(q => { grouped[q.item] = grouped[q.item] || []; grouped[q.item].push(q); });
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}},
+      e("div", {style:{fontSize:20, fontWeight:900, color:C.white}}, "Quotes"),
+      e("button", {style:S.btn(), onClick:()=>setShowAdd(true)}, "+ Quote")
+    ),
+    Object.keys(grouped).length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No quotes yet."),
+    Object.entries(grouped).map(([item, qs]) => e("div", {key:item, style:{marginBottom:20}},
+      e("div", {style:{fontSize:14, fontWeight:800, color:C.white, marginBottom:8}}, item),
+      qs.map(q => e("div", {key:q.id, style:{...S.card, display:"flex", justifyContent:"space-between", alignItems:"center"}},
+        e("div", {style:{flex:1}},
+          e("div", {style:{fontSize:14, fontWeight:600, color:C.white}}, q.vendor),
+          e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, q.notes || q.category)
+        ),
+        e("div", {style:{fontSize:15, fontWeight:800, color:C.white, marginRight:14}}, fmtMoney(q.amount)),
+        e(Badge, {text:q.status, color: q.status==="Accepted"?C.green:q.status==="Rejected"?"#ef5a63":C.amber,
+          bg: q.status==="Accepted"?"rgba(29,185,120,0.12)":q.status==="Rejected"?"rgba(143,29,36,0.15)":"rgba(242,160,7,0.12)"}),
+        q.status === "Pending" && e("button", {style:{...S.btn("ghost"), marginLeft:10, padding:"6px 10px", fontSize:12}, onClick:()=>acceptQuote(q.id)}, "Accept"),
+        e("div", {onClick:()=>setEditQuote(q), style:{cursor:"pointer", color:C.gray, marginLeft:10}}, Icon("edit",15)),
+        e("div", {onClick:()=>deleteQuote(q.id), style:{cursor:"pointer", color:C.gray, marginLeft:10}}, Icon("trash",15))
+      ))
+    )),
+    showAdd && e(QuoteModal, {onClose:()=>setShowAdd(false), onSave:(q)=>{ addQuote(q); setShowAdd(false); }}),
+    editQuote && e(QuoteModal, {quote:editQuote, onClose:()=>setEditQuote(null), onSave:(q)=>{ updateQuote(q); setEditQuote(null); }})
+  );
+}
+
+// ============================================================
+// PLANNING VIEW
+// ============================================================
+function PlanningView({ milestones, setMilestones, tasks }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editMs, setEditMs] = useState(null);
+  const sorted = [...milestones].sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  return e("div", {className:"content-area", style:S.content},
+    e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}},
+      e("div", {style:{fontSize:20, fontWeight:900, color:C.white}}, "Planning"),
+      e("button", {style:S.btn(), onClick:()=>setShowAdd(true)}, "+ Milestone")
+    ),
+    sorted.length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No milestones yet."),
+    sorted.map(m => {
+      const linkedTasks = tasks.filter(t=>t.milestone===m.id);
+      const doneCount = linkedTasks.filter(t=>t.status==="Done").length;
+      const pct = linkedTasks.length ? (doneCount/linkedTasks.length)*100 : 0;
+      return e("div", {key:m.id, style:S.card},
+        e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"flex-start"}},
+          e("div", null,
+            e("div", {style:{fontSize:11, color:C.red, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.05em"}}, fmtDate(m.date)),
+            e("div", {style:{fontSize:15, fontWeight:800, color:C.white, marginTop:2}}, m.week)
+          ),
+          e("div", {style:{display:"flex", gap:10}},
+            e("div", {onClick:()=>setEditMs(m), style:{cursor:"pointer", color:C.gray}}, Icon("edit",15)),
+            e("div", {onClick:()=>setMilestones(prev=>prev.filter(x=>x.id!==m.id)), style:{cursor:"pointer", color:C.gray}}, Icon("trash",15))
+          )
+        ),
+        linkedTasks.length > 0 && e("div", {style:{marginTop:10}},
+          e("div", {style:{display:"flex", justifyContent:"space-between", fontSize:11, color:C.gray, marginBottom:4}},
+            e("div", null, `${doneCount}/${linkedTasks.length} tasks done`), e("div", null, `${pct.toFixed(0)}%`)),
+          e(ProgressBar, {pct, color:C.purple})
+        ),
+        m.items && m.items.length > 0 && e("div", {style:{marginTop:12, display:"flex", flexDirection:"column", gap:6}},
+          m.items.map((it,idx) => e("div", {key:idx, style:{display:"flex", alignItems:"center", gap:8, fontSize:13, color:C.offwhite}},
+            e(Badge, {text:it.type, bg:"rgba(255,255,255,0.06)", color:C.gray}), it.text
+          ))
+        )
+      );
+    }),
+    showAdd && e(MilestoneModal, {onClose:()=>setShowAdd(false), onSave:(m)=>{ setMilestones(prev=>[...prev,m]); setShowAdd(false); }}),
+    editMs && e(MilestoneModal, {milestone:editMs, onClose:()=>setEditMs(null), onSave:(m)=>{ setMilestones(prev=>prev.map(x=>x.id===m.id?m:x)); setEditMs(null); }})
+  );
+}
+// ============================================================
+// APP ROOT
+// ============================================================
+function App() {
+  // ── Auth ──
+  const [pin, setPin] = useState("");
+  const [authed, setAuthed] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  // ── Nav ──
+  const [view, setView] = useState("home");
+  const [activeId, setActiveId] = useState(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
+  // ── Projects ──
+  const [projects, setProjects] = useState([]);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editProject, setEditProject] = useState(null);
+
+  // ── Per-project data ──
+  const [expenses, setExpenses] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+
+  // ── Persistent data ──
+  const [allMilestones, setAllMilestones] = useState({});
+  const [milestonesLoaded, setMilestonesLoaded] = useState(false);
+  const [vendors, setVendors] = useState({});
+  const [vendorCategories, setVendorCategories] = useState(DEFAULT_VENDOR_CATEGORIES);
+  const [vendorsLoaded, setVendorsLoaded] = useState(false);
+  const [mgmtTasks, setMgmtTasks] = useState([]);
+  const [mgmtLoaded, setMgmtLoaded] = useState(false);
+  const [showMgmtTaskModal, setShowMgmtTaskModal] = useState(false);
+
+  // ── Toasts ──
+  const [toasts, setToasts] = useState([]);
+  const showToast = (msg, type) => {
+    const id = genId("t");
+    setToasts(prev => [...prev, {id, msg, type: type||"success"}]);
+    setTimeout(() => setToasts(prev => prev.filter(t=>t.id!==id)), 3000);
+  };
+
+  const milestonesLoadedRef = useRef(false);
+  const vendorsLoadedRef = useRef(false);
+  const mgmtLoadedRef = useRef(false);
+
+  // ── Login ──
+  const handleLogin = async (enteredPin) => {
+    try {
+      await api(enteredPin, "getProjects");
+      setPin(enteredPin);
+      setAuthed(true);
+      setLoginError("");
+    } catch (err) {
+      setLoginError("Incorrect PIN");
+    }
+  };
+
+  // ── Load projects on auth ──
+  useEffect(() => {
+    if (!authed) return;
+    api(pin, "getProjects").then(data => {
+      setProjects(data.projects || []);
+      setProjectsLoaded(true);
+    }).catch(() => { showToast("Failed to load jobs", "error"); setProjectsLoaded(true); });
+  }, [authed]);
+
+  // ── Load persistent data on auth ──
+  useEffect(() => {
+    if (!authed) return;
+    api(pin, "getMilestones").then(data => {
+      if (data.milestones) setAllMilestones(prev => ({...prev, ...data.milestones}));
+      setMilestonesLoaded(true);
+    }).catch(() => setMilestonesLoaded(true));
+
+    api(pin, "getVendors").then(data => {
+      if (data.vendors) setVendors(data.vendors);
+      if (data.categories) setVendorCategories(data.categories);
+      setVendorsLoaded(true);
+    }).catch(() => setVendorsLoaded(true));
+
+    api(pin, "getMgmtData").then(data => {
+      const d = data.data || {};
+      if (d.mgmtTasks) setMgmtTasks(d.mgmtTasks);
+      setMgmtLoaded(true);
+    }).catch(() => setMgmtLoaded(true));
+  }, [authed]);
+
+  // ── Save milestones (debounced) ──
+  useEffect(() => {
+    if (!authed) return;
+    if (!milestonesLoadedRef.current) { milestonesLoadedRef.current = milestonesLoaded; if (!milestonesLoaded) return; }
+    if (!activeId) return;
+    const t = setTimeout(() => {
+      api(pin, "saveMilestones", {projectId: activeId, milestones: allMilestones[activeId] || []}).catch(()=>{});
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [allMilestones, milestonesLoaded, activeId]);
+
+  // ── Save vendors (debounced) ──
+  useEffect(() => {
+    if (!authed) return;
+    if (!vendorsLoadedRef.current) { vendorsLoadedRef.current = vendorsLoaded; if (!vendorsLoaded) return; }
+    const t = setTimeout(() => {
+      api(pin, "saveVendors", {vendors, categories: vendorCategories}).catch(()=>{});
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [vendors, vendorCategories, vendorsLoaded]);
+
+  // ── Save mgmt tasks (debounced) ──
+  useEffect(() => {
+    if (!authed) return;
+    if (!mgmtLoadedRef.current) { mgmtLoadedRef.current = mgmtLoaded; if (!mgmtLoaded) return; }
+    const t = setTimeout(() => {
+      api(pin, "saveMgmtData", {key:"mgmtTasks", value: mgmtTasks}).catch(()=>{});
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [mgmtTasks, mgmtLoaded]);
+
+  // ── Load per-project data on project switch ──
+  useEffect(() => {
+    if (!authed || !activeId) return;
+    api(pin, "getExpenses", {projectId: activeId}).then(d => setExpenses(d.expenses || [])).catch(()=>{});
+    api(pin, "getTasks", {projectId: activeId}).then(d => setTasks(d.tasks || [])).catch(()=>{});
+    api(pin, "getQuotes", {projectId: activeId}).then(d => setQuotes(d.quotes || [])).catch(()=>{});
+  }, [authed, activeId, reloadTick]);
+
+  // ── General Expenses (Management) — loaded like a project ──
+  const [mgmtExpenses, setMgmtExpenses] = useState([]);
+  useEffect(() => {
+    if (!authed) return;
+    api(pin, "getExpenses", {projectId: "general-expenses"}).then(d => setMgmtExpenses(d.expenses || [])).catch(()=>{});
+  }, [authed, reloadTick]);
+
+  // ── Navigation helpers ──
+  const navTo = (v) => setView(v);
+  const selectProject = (id, v) => {
+    setActiveId(id);
+    setExpenses([]); setTasks([]); setQuotes([]);
+    setReloadTick(t => t+1);
+    setView(v || "dashboard");
+  };
+  const enterManagement = () => {
+    setActiveId(null);
+    setView("management");
+  };
+
+  const activeProject = projects.find(p => p.id === activeId) || null;
+  const milestones = allMilestones[activeId] || [];
+  const setMilestonesForActive = (updater) => setAllMilestones(prev => ({
+    ...prev,
+    [activeId]: typeof updater === "function" ? updater(prev[activeId] || []) : updater
+  }));
+
+  // ── Project CRUD ──
+  const saveProject = async (p) => {
+    const isEdit = projects.some(x=>x.id===p.id);
+    setProjects(prev => isEdit ? prev.map(x=>x.id===p.id?p:x) : [...prev, p]);
+    setShowProjectModal(false); setEditProject(null);
+    try {
+      await api(pin, isEdit ? "updateProject" : "addProject", {project:p});
+      showToast(isEdit ? "Job updated" : "Job created");
+    } catch(err) { showToast("Save failed", "error"); }
+  };
+
+  // ── Expense CRUD (works for both active project + general expenses) ──
+  const targetPid = activeId || "general-expenses";
+  const addExpense = async (x) => {
+    if (activeId) setExpenses(prev=>[...prev,x]); else setMgmtExpenses(prev=>[...prev,x]);
+    try { await api(pin,"addExpense",{projectId:targetPid, expense:x}); showToast("Expense added"); }
+    catch(err){ showToast("Failed to save expense","error"); }
+  };
+  const updateExpense = async (x) => {
+    if (activeId) setExpenses(prev=>prev.map(y=>y.id===x.id?x:y)); else setMgmtExpenses(prev=>prev.map(y=>y.id===x.id?x:y));
+    try { await api(pin,"updateExpense",{projectId:targetPid, expense:x}); showToast("Expense updated"); }
+    catch(err){ showToast("Failed to update expense","error"); }
+  };
+  const deleteExpense = async (id) => {
+    if (activeId) setExpenses(prev=>prev.filter(y=>y.id!==id)); else setMgmtExpenses(prev=>prev.filter(y=>y.id!==id));
+    try { await api(pin,"deleteExpense",{projectId:targetPid, expenseId:id}); }
+    catch(err){ showToast("Failed to delete expense","error"); }
+  };
+
+  // ── Task CRUD ──
+  const addTask = async (t) => {
+    setTasks(prev=>[...prev,t]);
+    try { await api(pin,"addTask",{projectId:activeId, task:t}); showToast("Task added"); }
+    catch(err){ showToast("Failed to save task","error"); }
+  };
+  const updateTask = async (t) => {
+    setTasks(prev=>prev.map(y=>y.id===t.id?t:y));
+    try { await api(pin,"updateTask",{projectId:activeId, task:t}); }
+    catch(err){ showToast("Failed to update task","error"); }
+  };
+  const deleteTask = async (id) => {
+    setTasks(prev=>prev.filter(y=>y.id!==id));
+    try { await api(pin,"deleteTask",{projectId:activeId, taskId:id}); }
+    catch(err){ showToast("Failed to delete task","error"); }
+  };
+
+  // ── Quote CRUD ──
+  const addQuote = async (q) => {
+    setQuotes(prev=>[...prev,q]);
+    try { await api(pin,"addQuote",{projectId:activeId, quote:q}); showToast("Quote added"); }
+    catch(err){ showToast("Failed to save quote","error"); }
+  };
+  const updateQuote = async (q) => {
+    setQuotes(prev=>prev.map(y=>y.id===q.id?q:y));
+    try { await api(pin,"updateQuote",{projectId:activeId, quote:q}); }
+    catch(err){ showToast("Failed to update quote","error"); }
+  };
+  const deleteQuote = async (id) => {
+    setQuotes(prev=>prev.filter(y=>y.id!==id));
+    try { await api(pin,"deleteQuote",{projectId:activeId, quoteId:id}); }
+    catch(err){ showToast("Failed to delete quote","error"); }
+  };
+  const acceptQuote = async (id) => {
+    setQuotes(prev=>prev.map(y=>y.id===id?{...y,status:"Accepted"}:y));
+    try {
+      const res = await api(pin,"acceptQuote",{projectId:activeId, quoteId:id});
+      showToast("Quote accepted & added to expenses");
+      setReloadTick(t=>t+1);
+    } catch(err){ showToast("Failed to accept quote","error"); }
+  };
+
+  if (!authed) {
+    return e(LoginScreen, {onLogin: handleLogin, error: loginError});
+  }
+
+  if (!projectsLoaded) {
+    return e("div", {style:{height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:C.bg, color:C.gray}}, "Loading…");
+  }
+
+  let mainView;
+  if (view === "home") mainView = e(HomeView, {projects, mgmtTasks, enterManagement, selectProject, setShowProjectModal});
+  else if (view === "management") mainView = e(ManagementView, {mgmtTasks, setMgmtTasks, mgmtExpenses, addExpense, updateExpense, deleteExpense, showMgmtTaskModal, setShowMgmtTaskModal, showToast});
+  else if (view === "vendors") mainView = e(VendorsView, {vendors, categories: vendorCategories, setVendors, setCategories: setVendorCategories, showToast});
+  else if (view === "dashboard" && activeProject) mainView = e(DashboardView, {project: activeProject, expenses, tasks, quotes, onEditProject: () => setEditProject(activeProject)});
+  else if (view === "expenses" && activeProject) mainView = e(ExpensesView, {expenses, addExpense, updateExpense, deleteExpense});
+  else if (view === "tasks" && activeProject) mainView = e(TasksView, {tasks, milestones, addTask, updateTask, deleteTask});
+  else if (view === "quotes" && activeProject) mainView = e(QuotesView, {quotes, addQuote, updateQuote, deleteQuote, acceptQuote});
+  else if (view === "planning" && activeProject) mainView = e(PlanningView, {milestones, setMilestones: setMilestonesForActive, tasks});
+  else mainView = e(HomeView, {projects, mgmtTasks, enterManagement, selectProject, setShowProjectModal});
+
+  return e("div", {style:S.root},
+    e("div", {style:S.header},
+      e("div", {style:{display:"flex", alignItems:"center", gap:10}},
+        activeId && e("div", {onClick:()=>{setActiveId(null); setView("home");}, style:{cursor:"pointer", color:C.gray, display:"flex"}}, Icon("chevLeft",20)),
+        e("div", {style:{fontSize:15, fontWeight:900, color:C.white, letterSpacing:"-0.3px"}}, activeProject ? activeProject.name : COMPANY_NAME)
+      ),
+      e("div", {onClick:()=>{setAuthed(false); setPin(""); setActiveId(null); setView("home");}, style:{cursor:"pointer", color:C.gray, display:"flex"}}, Icon("logout",18))
+    ),
+    e("div", {style:{display:"flex", flex:1, overflow:"hidden"}},
+      e(Sidebar, {view, activeId, projects, navTo, selectProject, enterManagement}),
+      mainView
+    ),
+    e(BottomNav, {view, activeId, navTo, enterManagement}),
+    showProjectModal && e(ProjectModal, {onClose:()=>setShowProjectModal(false), onSave:saveProject}),
+    editProject && e(ProjectModal, {project:editProject, onClose:()=>setEditProject(null), onSave:saveProject}),
+    e(Toast, {toasts})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+//]]>
+</script>
+</body>
+</html>
