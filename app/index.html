@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Pergolette — Job Tracker</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#24262A">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,12 +14,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; padding: 0; height: 100%; background: #0a0a0a; overscroll-behavior: none; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #24262A; overscroll-behavior: none; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 4px; }
   input, textarea, select { -webkit-appearance: none; }
-  input:focus, textarea:focus, select:focus { border-color: #e5192b !important; }
+  input:focus, textarea:focus, select:focus { border-color: #D98C3D !important; }
   button { -webkit-appearance: none; }
   @media(max-width:700px) {
     .desktop-sidebar { display: none !important; }
@@ -76,27 +76,27 @@ function isOverdue(dueDate, status) {
 }
 
 // ============================================================
-// DESIGN SYSTEM — Red / White / Black
+// DESIGN SYSTEM — matches pergolette.com (Graphite / Ivory / Amber)
 // ============================================================
 const C = {
-  bg: "#0a0a0a",
-  card: "#161616",
-  cardAlt: "#1c1c1c",
-  border: "#2b2b2b",
-  borderLight: "#3a3a3a",
-  inputBg: "#050505",
-  red: "#e5192b",
-  redDark: "#a10f1e",
-  redSoft: "rgba(229,25,43,0.12)",
-  white: "#f7f7f5",
-  offwhite: "#d8d8d6",
-  gray: "#8f8f8f",
-  grayDark: "#5c5c5c",
-  green: "#1db978",
-  amber: "#f2a007",
-  maroon: "#8f1d24",
-  cyan: "#2fa3c4",
-  purple: "#8b6bd6",
+  bg: "#24262A",       // graphite
+  card: "#2E3136",     // graphite-2
+  cardAlt: "#3A3D42",  // graphite-3
+  border: "rgba(250,247,241,0.14)",
+  borderLight: "rgba(250,247,241,0.24)",
+  inputBg: "#1C1D1F",  // ink
+  red: "#D98C3D",       // amber (primary accent / CTA)
+  redDark: "#B5701F",   // amber-dark
+  redSoft: "rgba(217,140,61,0.16)",
+  white: "#FAF7F1",     // paper
+  offwhite: "#E7DFCF",  // ivory-2
+  gray: "#9B9689",
+  grayDark: "#6B675C",
+  green: "#7FA672",
+  amber: "#D98C3D",
+  maroon: "#A24B42",
+  cyan: "#4F7B82",       // teal
+  purple: "#6E7F9E",
 };
 
 const TASK_STATUS_COLORS = {
@@ -117,13 +117,13 @@ const S = {
   btn: (variant) => variant === "ghost"
     ? { background:"transparent", border:`1px solid ${C.border}`, color:C.offwhite, borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:600, fontFamily:"inherit" }
     : variant === "danger"
-    ? { background:"transparent", border:`1px solid ${C.maroon}`, color:"#ef5a63", borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:600, fontFamily:"inherit" }
-    : { background:C.red, color:"#fff", border:"none", borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:700, fontFamily:"inherit" },
+    ? { background:"transparent", border:`1px solid ${C.maroon}`, color:"#E8A79E", borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:600, fontFamily:"inherit" }
+    : { background:C.red, color:"#1B1200", border:"none", borderRadius:8, padding:"10px 16px", cursor:"pointer", fontSize:14, fontWeight:700, fontFamily:"inherit" },
   sideLabel: { fontSize:10, fontWeight:700, color:C.grayDark, textTransform:"uppercase", letterSpacing:"0.12em", padding:"8px 16px 4px" },
   sideItem: (active) => ({
     padding:"8px 16px", cursor:"pointer", fontSize:13, fontWeight:active?700:400,
     color: active ? C.red : C.offwhite,
-    background: active ? "rgba(229,25,43,0.08)" : "transparent",
+    background: active ? "rgba(217,140,61,0.10)" : "transparent",
     borderLeft: active ? `2px solid ${C.red}` : "2px solid transparent",
     display:"flex", alignItems:"center", gap:8, userSelect:"none"
   }),
@@ -502,8 +502,8 @@ function MgmtTaskModal({ item, onSave, onClose }) {
 function LoginScreen({ onLogin, error }) {
   const [pin, setPin] = useState("");
   return e("div", {style:{height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:C.bg, flexDirection:"column", padding:20}},
-    e("div", {style:{width:64, height:64, borderRadius:16, background:`linear-gradient(135deg, ${C.red}, ${C.redDark})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, boxShadow:"0 8px 30px rgba(229,25,43,0.35)"}},
-      e("div", {style:{fontSize:28, fontWeight:900, color:"#fff"}}, "P")
+    e("div", {style:{width:64, height:64, borderRadius:16, background:`linear-gradient(135deg, ${C.red}, ${C.redDark})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, boxShadow:"0 8px 30px rgba(217,140,61,0.35)"}},
+      e("div", {style:{fontSize:28, fontWeight:900, color:"#1B1200"}}, "P")
     ),
     e("div", {style:{fontSize:24, fontWeight:900, color:C.white, letterSpacing:"-0.5px", marginBottom:4}}, COMPANY_NAME),
     e("div", {style:{fontSize:13, color:C.gray, marginBottom:28}}, "Job Tracker"),
@@ -514,7 +514,7 @@ function LoginScreen({ onLogin, error }) {
         onChange: ev => setPin(ev.target.value),
         onKeyDown: ev => { if (ev.key === "Enter") onLogin(pin); }
       }),
-      error && e("div", {style:{color:"#ef5a63", fontSize:12, marginTop:8, textAlign:"center"}}, error),
+      error && e("div", {style:{color:"#E8A79E", fontSize:12, marginTop:8, textAlign:"center"}}, error),
       e("button", {style:{...S.btn(), width:"100%", marginTop:14}, onClick:()=>onLogin(pin)}, "Enter")
     )
   );
@@ -635,7 +635,7 @@ function ManagementView({ mgmtTasks, setMgmtTasks, mgmtExpenses, addExpense, upd
     ),
     (mgmtTasks||[]).length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No pipeline tasks yet."),
     (mgmtTasks||[]).map(t => e("div", {key:t.id, style:{...S.card, display:"flex", alignItems:"center", gap:12}},
-      e("div", {onClick:()=>cycleStatus(t), style:{cursor:"pointer", flexShrink:0}}, e(Badge, {text:t.status, color:"#0a0a0a", bg:TASK_STATUS_COLORS[t.status]})),
+      e("div", {onClick:()=>cycleStatus(t), style:{cursor:"pointer", flexShrink:0}}, e(Badge, {text:t.status, color:"#1B1200", bg:TASK_STATUS_COLORS[t.status]})),
       e("div", {style:{flex:1}},
         e("div", {style:{fontSize:14, fontWeight:600, color:C.white}}, t.task),
         (t.assignee || t.notes) && e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, [t.assignee, t.notes].filter(Boolean).join(" — "))
@@ -760,16 +760,16 @@ function DashboardView({ project, expenses, tasks, quotes, onEditProject }) {
     e("div", {style:{fontSize:13, color:C.gray, marginBottom:16}}, project.description),
     e("div", {style:{display:"flex", gap:12, marginBottom:16, flexWrap:"wrap"}},
       e(StatCard, {label:"Contract Value", value: fmtMoney(project.contractValue)}),
-      e(StatCard, {label:"Budget Spent", value: fmtMoney(totalSpend), color: pct > 100 ? "#ef5a63" : C.white}),
+      e(StatCard, {label:"Budget Spent", value: fmtMoney(totalSpend), color: pct > 100 ? "#E8A79E" : C.white}),
       e(StatCard, {label:"Tasks Done", value: `${doneCount}/${tasks.length}`}),
       e(StatCard, {label:"Deposit Received", value: fmtMoney(project.depositReceived)})
     ),
     e("div", {style:S.card},
       e("div", {style:{display:"flex", justifyContent:"space-between", marginBottom:8}},
         e("div", {style:{fontSize:13, fontWeight:700, color:C.white}}, "Budget Utilization"),
-        e("div", {style:{fontSize:13, color: pct>100?"#ef5a63":C.gray}}, `${pct.toFixed(0)}%`)
+        e("div", {style:{fontSize:13, color: pct>100?"#E8A79E":C.gray}}, `${pct.toFixed(0)}%`)
       ),
-      e(ProgressBar, {pct, color: pct > 100 ? "#ef5a63" : C.red})
+      e(ProgressBar, {pct, color: pct > 100 ? "#E8A79E" : C.red})
     ),
     Object.keys(byCategory).length > 0 && e("div", {style:S.card},
       e("div", {style:{fontSize:13, fontWeight:700, color:C.white, marginBottom:12}}, "Spend by Category"),
@@ -857,14 +857,14 @@ function TasksView({ tasks, milestones, addTask, updateTask, deleteTask }) {
       const overdue = isOverdue(t.dueDate, t.status);
       const ms = milestones.find(m=>m.id===t.milestone);
       return e("div", {key:t.id, style:{...S.card, display:"flex", alignItems:"flex-start", gap:12}},
-        e("div", {onClick:()=>cycleStatus(t), style:{cursor:"pointer", flexShrink:0, marginTop:2}}, e(Badge, {text:t.status, color:"#0a0a0a", bg:TASK_STATUS_COLORS[t.status]})),
+        e("div", {onClick:()=>cycleStatus(t), style:{cursor:"pointer", flexShrink:0, marginTop:2}}, e(Badge, {text:t.status, color:"#1B1200", bg:TASK_STATUS_COLORS[t.status]})),
         e("div", {style:{flex:1}},
           e("div", {style:{display:"flex", alignItems:"center", gap:8, flexWrap:"wrap"}},
             e("div", {style:{fontSize:14, fontWeight:600, color:C.white}}, t.task),
-            t.priority==="High" && e(Badge, {text:"High", color:"#ef5a63", bg:"rgba(143,29,36,0.2)"}),
-            ms && e(Badge, {text:ms.week, color:C.purple, bg:"rgba(139,107,214,0.15)"})
+            t.priority==="High" && e(Badge, {text:"High", color:"#E8A79E", bg:"rgba(162,75,66,0.28)"}),
+            ms && e(Badge, {text:ms.week, color:C.purple, bg:"rgba(110,127,158,0.22)"})
           ),
-          e("div", {style:{fontSize:12, color: overdue ? "#ef5a63" : C.gray, marginTop:4}},
+          e("div", {style:{fontSize:12, color: overdue ? "#E8A79E" : C.gray, marginTop:4}},
             [t.category, t.assignee, t.dueDate ? (overdue ? `Overdue: ${fmtDate(t.dueDate)}` : fmtDate(t.dueDate)) : null].filter(Boolean).join(" · ")),
           t.notes && e("div", {style:{fontSize:12, color:C.grayDark, marginTop:4}}, t.notes)
         ),
@@ -899,8 +899,8 @@ function QuotesView({ quotes, addQuote, updateQuote, deleteQuote, acceptQuote })
           e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, q.notes || q.category)
         ),
         e("div", {style:{fontSize:15, fontWeight:800, color:C.white, marginRight:14}}, fmtMoney(q.amount)),
-        e(Badge, {text:q.status, color: q.status==="Accepted"?C.green:q.status==="Rejected"?"#ef5a63":C.amber,
-          bg: q.status==="Accepted"?"rgba(29,185,120,0.12)":q.status==="Rejected"?"rgba(143,29,36,0.15)":"rgba(242,160,7,0.12)"}),
+        e(Badge, {text:q.status, color: q.status==="Accepted"?C.green:q.status==="Rejected"?"#E8A79E":C.amber,
+          bg: q.status==="Accepted"?"rgba(127,166,114,0.16)":q.status==="Rejected"?"rgba(162,75,66,0.2)":"rgba(217,140,61,0.16)"}),
         q.status === "Pending" && e("button", {style:{...S.btn("ghost"), marginLeft:10, padding:"6px 10px", fontSize:12}, onClick:()=>acceptQuote(q.id)}, "Accept"),
         e("div", {onClick:()=>setEditQuote(q), style:{cursor:"pointer", color:C.gray, marginLeft:10}}, Icon("edit",15)),
         e("div", {onClick:()=>deleteQuote(q.id), style:{cursor:"pointer", color:C.gray, marginLeft:10}}, Icon("trash",15))
