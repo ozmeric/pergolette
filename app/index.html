@@ -39,10 +39,62 @@ const { useState, useEffect, useRef, useMemo } = React;
 const e = React.createElement;
 
 // ============================================================
-// CONFIG
+// CONFIG — everything client-specific flows from here.
+// NOTE: API_URL, action names, and stored field names (contractValue,
+// materialsBudget, depositReceived, etc.) are UNCHANGED from the live
+// deployment on purpose — renaming any of those would break the
+// already-deployed Apps Script backend and existing Sheet data.
 // ============================================================
-const API_URL = "https://pergolette.weblinallc.workers.dev/";
-const COMPANY_NAME = "Pergolette";
+const CONFIG = {
+  // ── Backend (unchanged — live deployment) ──
+  apiUrl: "https://pergolette.weblinallc.workers.dev/",
+
+  // ── Branding ──
+  companyName:  "Pergolette",
+  companyShort: "Pergolette",
+  primaryColor: "#1C1D1F",  // ink — matches pergolette.com
+  accentColor:  "#D98C3D",  // amber — matches pergolette.com
+  logoText:     "P",
+
+  // ── Job statuses (this app tracks status, not a separate "type") ──
+  projectStatuses: ["Lead", "Active", "Completed"],
+
+  // ── Expense categories (parent → subcategory) ──
+  expenseCategories: {
+    "Materials":            ["Lumber","Louvers/Motors","Hardware/Fasteners","Concrete/Footings","Roofing/Panels","Other"],
+    "Labor":                ["Install Crew","Electrical","Subcontractor","Other"],
+    "Permits":               ["Building Permit","Electrical Permit","HOA Fee","Other"],
+    "Design/Consultation":  ["Site Visit","3D Rendering","Engineering","Other"],
+    "Delivery/Equipment":   ["Delivery","Equipment Rental","Crane/Lift","Other"],
+    "Professional Fees":    ["Sales Commission","Insurance","Other"],
+  },
+
+  // ── Task categories / priorities / statuses ──
+  taskCategories: ["Sales","Design","Permits","Install","Electrical","Punch List","Admin","Other"],
+  taskPriorities: ["High","Med","Low"],
+  taskStatuses:   ["To Do","In Progress","Blocked","Done"],
+
+  // ── Vendor categories (default set — users can add more in-app) ──
+  vendorCategories: ["Suppliers","Installers / Subs","Electricians","Permitting Offices","Delivery / Equipment Rental","Other"],
+
+  // ── Financial field labels (Dashboard + Job modal) ──
+  financialFields: {
+    contractValue:    "Contract Value",
+    materialsBudget:  "Materials/Labor Budget",
+    depositReceived:  "Deposit Received",
+  },
+
+  // ── Management section labels ──
+  managementLabel: "Management",
+  pipelineLabel:   "Pipeline / General Tasks",
+
+  // ── Notification email ──
+  notifyEmail: "hello@pergolette.com",
+};
+
+// Back-compat aliases so nothing else in the file has to change
+const API_URL = CONFIG.apiUrl;
+const COMPANY_NAME = CONFIG.companyName;
 
 async function api(pin, action, extra) {
   extra = extra || {};
@@ -84,9 +136,9 @@ const C = {
   cardAlt: "#3A3D42",  // graphite-3
   border: "rgba(250,247,241,0.14)",
   borderLight: "rgba(250,247,241,0.24)",
-  inputBg: "#1C1D1F",  // ink
-  red: "#D98C3D",       // amber (primary accent / CTA)
-  redDark: "#B5701F",   // amber-dark
+  inputBg: CONFIG.primaryColor,  // ink
+  red: CONFIG.accentColor,        // amber (primary accent / CTA)
+  redDark: "#B5701F",             // amber-dark
   redSoft: "rgba(217,140,61,0.16)",
   white: "#FAF7F1",     // paper
   offwhite: "#E7DFCF",  // ivory-2
@@ -129,18 +181,13 @@ const S = {
   }),
 };
 
-const EXPENSE_CATEGORIES = {
-  "Materials": ["Lumber","Louvers/Motors","Hardware/Fasteners","Concrete/Footings","Roofing/Panels","Other"],
-  "Labor": ["Install Crew","Electrical","Subcontractor","Other"],
-  "Permits": ["Building Permit","Electrical Permit","HOA Fee","Other"],
-  "Design/Consultation": ["Site Visit","3D Rendering","Engineering","Other"],
-  "Delivery/Equipment": ["Delivery","Equipment Rental","Crane/Lift","Other"],
-  "Professional Fees": ["Sales Commission","Insurance","Other"]
-};
-const TASK_CATEGORIES = ["Sales","Design","Permits","Install","Electrical","Punch List","Admin","Other"];
-const PRIORITIES = ["High","Med","Low"];
-const PROJECT_STATUSES = ["Lead","Active","Completed"];
-const DEFAULT_VENDOR_CATEGORIES = ["Suppliers","Installers / Subs","Electricians","Permitting Offices","Delivery / Equipment Rental","Other"];
+// Derived from CONFIG — kept as separate names so the rest of the file
+// (which was written against these) doesn't need to change.
+const EXPENSE_CATEGORIES = CONFIG.expenseCategories;
+const TASK_CATEGORIES = CONFIG.taskCategories;
+const PRIORITIES = CONFIG.taskPriorities;
+const PROJECT_STATUSES = CONFIG.projectStatuses;
+const DEFAULT_VENDOR_CATEGORIES = CONFIG.vendorCategories;
 
 // ============================================================
 // SMALL SHARED COMPONENTS
@@ -233,12 +280,12 @@ function ProjectModal({ project, onSave, onClose }) {
       e("div", null, e("label", {style:S.label}, "Location / Notes"),
         e("input", {style:S.input, value:f.description, onChange:ev=>upd("description",ev.target.value), placeholder:"e.g. Midlothian, VA — Motorized Louver Pergola"})),
       e("div", {style:{display:"flex", gap:12}},
-        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Contract Value"),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, CONFIG.financialFields.contractValue),
           e("input", {style:S.input, type:"number", value:f.contractValue, onChange:ev=>upd("contractValue",ev.target.value)})),
-        e("div", {style:{flex:1}}, e("label", {style:S.label}, "Materials/Labor Budget"),
+        e("div", {style:{flex:1}}, e("label", {style:S.label}, CONFIG.financialFields.materialsBudget),
           e("input", {style:S.input, type:"number", value:f.materialsBudget, onChange:ev=>upd("materialsBudget",ev.target.value)}))
       ),
-      e("div", null, e("label", {style:S.label}, "Deposit Received"),
+      e("div", null, e("label", {style:S.label}, CONFIG.financialFields.depositReceived),
         e("input", {style:S.input, type:"number", value:f.depositReceived, onChange:ev=>upd("depositReceived",ev.target.value)})),
       e("div", null, e("label", {style:S.label}, "Status"),
         e("select", {style:S.input, value:f.status, onChange:ev=>upd("status",ev.target.value)},
@@ -503,9 +550,9 @@ function LoginScreen({ onLogin, error }) {
   const [pin, setPin] = useState("");
   return e("div", {style:{height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:C.bg, flexDirection:"column", padding:20}},
     e("div", {style:{width:64, height:64, borderRadius:16, background:`linear-gradient(135deg, ${C.red}, ${C.redDark})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, boxShadow:"0 8px 30px rgba(217,140,61,0.35)"}},
-      e("div", {style:{fontSize:28, fontWeight:900, color:"#1B1200"}}, "P")
+      e("div", {style:{fontSize:28, fontWeight:900, color:"#1B1200"}}, CONFIG.logoText)
     ),
-    e("div", {style:{fontSize:24, fontWeight:900, color:C.white, letterSpacing:"-0.5px", marginBottom:4}}, COMPANY_NAME),
+    e("div", {style:{fontSize:24, fontWeight:900, color:C.white, letterSpacing:"-0.5px", marginBottom:4}}, CONFIG.companyName),
     e("div", {style:{fontSize:13, color:C.gray, marginBottom:28}}, "Job Tracker"),
     e("div", {style:{width:"100%", maxWidth:280}},
       e("input", {
@@ -527,7 +574,7 @@ function Sidebar({ view, activeId, projects, navTo, selectProject, enterManageme
   const visibleProjects = projects.filter(p => !(p.description||"").includes("No budget"));
   return e("div", {className:"desktop-sidebar", style:S.sidebar},
     e("div", {style:S.sideItem(view==="home" && !activeId), onClick:()=>navTo("home")}, Icon("home",16), "Home"),
-    e("div", {style:S.sideItem(view==="management"), onClick:enterManagement}, Icon("settings",16), "Management"),
+    e("div", {style:S.sideItem(view==="management"), onClick:enterManagement}, Icon("settings",16), CONFIG.managementLabel),
     e("div", {onClick:()=>navTo("vendors"), style:S.sideItem(view==="vendors")}, Icon("users",16), "Vendors"),
     e("div", {style:S.sideLabel}, "Jobs"),
     visibleProjects.map(p => e("div", {key:p.id},
@@ -582,7 +629,7 @@ function HomeView({ projects, mgmtTasks, enterManagement, selectProject, setShow
         display:"flex", justifyContent:"space-between", alignItems:"center"
       }},
       e("div", null,
-        e("div", {style:{fontSize:15, fontWeight:800, color:C.white}}, "Management"),
+        e("div", {style:{fontSize:15, fontWeight:800, color:C.white}}, CONFIG.managementLabel),
         e("div", {style:{fontSize:12, color:C.gray, marginTop:2}}, "Pipeline, general tasks & company expenses")
       ),
       e("div", {style:{display:"flex", alignItems:"center", gap:10}},
@@ -624,13 +671,13 @@ function ManagementView({ mgmtTasks, setMgmtTasks, mgmtExpenses, addExpense, upd
   };
   const totalSpend = (mgmtExpenses||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
   return e("div", {className:"content-area", style:S.content},
-    e("div", {style:{fontSize:20, fontWeight:900, color:C.white, marginBottom:16}}, "Management"),
+    e("div", {style:{fontSize:20, fontWeight:900, color:C.white, marginBottom:16}}, CONFIG.managementLabel),
     e("div", {style:{display:"flex", gap:12, marginBottom:16, flexWrap:"wrap"}},
       e(StatCard, {label:"Open Pipeline Tasks", value: (mgmtTasks||[]).filter(t=>t.status!=="Done").length}),
       e(StatCard, {label:"General Expenses", value: fmtMoney(totalSpend), color:C.red})
     ),
     e("div", {style:{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}},
-      e("div", {style:{fontSize:14, fontWeight:800, color:C.white}}, "Pipeline / General Tasks"),
+      e("div", {style:{fontSize:14, fontWeight:800, color:C.white}}, CONFIG.pipelineLabel),
       e("button", {style:S.btn("ghost"), onClick:()=>setShowMgmtTaskModal(true)}, "+ Task")
     ),
     (mgmtTasks||[]).length === 0 && e("div", {style:{...S.card, color:C.gray, textAlign:"center"}}, "No pipeline tasks yet."),
@@ -759,10 +806,10 @@ function DashboardView({ project, expenses, tasks, quotes, onEditProject }) {
     ),
     e("div", {style:{fontSize:13, color:C.gray, marginBottom:16}}, project.description),
     e("div", {style:{display:"flex", gap:12, marginBottom:16, flexWrap:"wrap"}},
-      e(StatCard, {label:"Contract Value", value: fmtMoney(project.contractValue)}),
+      e(StatCard, {label:CONFIG.financialFields.contractValue, value: fmtMoney(project.contractValue)}),
       e(StatCard, {label:"Budget Spent", value: fmtMoney(totalSpend), color: pct > 100 ? "#E8A79E" : C.white}),
       e(StatCard, {label:"Tasks Done", value: `${doneCount}/${tasks.length}`}),
-      e(StatCard, {label:"Deposit Received", value: fmtMoney(project.depositReceived)})
+      e(StatCard, {label:CONFIG.financialFields.depositReceived, value: fmtMoney(project.depositReceived)})
     ),
     e("div", {style:S.card},
       e("div", {style:{display:"flex", justifyContent:"space-between", marginBottom:8}},
@@ -1204,9 +1251,17 @@ function App() {
     e("div", {style:S.header},
       e("div", {style:{display:"flex", alignItems:"center", gap:10}},
         activeId && e("div", {onClick:()=>{setActiveId(null); setView("home");}, style:{cursor:"pointer", color:C.gray, display:"flex"}}, Icon("chevLeft",20)),
-        e("div", {style:{fontSize:15, fontWeight:900, color:C.white, letterSpacing:"-0.3px"}}, activeProject ? activeProject.name : COMPANY_NAME)
+        e("div", {style:{
+          width:28, height:28, borderRadius:7, background:CONFIG.accentColor,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontWeight:900, fontSize:14, color:CONFIG.primaryColor, flexShrink:0
+        }}, CONFIG.logoText),
+        e("div", {style:{fontSize:15, fontWeight:900, color:C.white, letterSpacing:"-0.3px"}}, activeProject ? activeProject.name : CONFIG.companyName)
       ),
-      e("div", {onClick:()=>{setAuthed(false); setPin(""); setActiveId(null); setView("home");}, style:{cursor:"pointer", color:C.gray, display:"flex"}}, Icon("logout",18))
+      e("div", {style:{display:"flex", alignItems:"center", gap:16}},
+        e("div", {onClick:()=>{setAuthed(false); setPin(""); setActiveId(null); setView("home");}, style:{cursor:"pointer", color:C.gray, display:"flex"}}, Icon("logout",18)),
+        e("img", {src:"./buildflow-logo.png", alt:"BuildFlow by Weblina LLC", style:{height:24, opacity:0.9}})
+      )
     ),
     e("div", {style:{display:"flex", flex:1, overflow:"hidden"}},
       e(Sidebar, {view, activeId, projects, navTo, selectProject, enterManagement}),
