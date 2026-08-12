@@ -659,10 +659,7 @@ function HomeView({ projects, mgmtTasks, enterManagement, selectProject, setShow
           e("div", null, e("div", {style:S.label}, "Budget"), e("div", {style:{fontSize:15, fontWeight:700, color:C.white}}, fmtMoney(p.materialsBudget)))
         )
       );
-    }),
-    e("div", {style:{textAlign:"center", marginTop:24, fontSize:11, color:C.grayDark}},
-      e("a", {href:"https://weblina.llc", target:"_blank", rel:"noopener", style:{color:"inherit", textDecoration:"none"}}, "Powered by BuildFlow — Weblina LLC")
-    )
+    })
   );
 }
 
