@@ -563,6 +563,9 @@ function LoginScreen({ onLogin, error }) {
       }),
       error && e("div", {style:{color:"#E8A79E", fontSize:12, marginTop:8, textAlign:"center"}}, error),
       e("button", {style:{...S.btn(), width:"100%", marginTop:14}, onClick:()=>onLogin(pin)}, "Enter")
+    ),
+    e("div", {style:{marginTop:36, fontSize:11, color:C.grayDark, textAlign:"center"}},
+      e("a", {href:"https://weblina.llc", target:"_blank", rel:"noopener", style:{color:"inherit", textDecoration:"none"}}, "Powered by BuildFlow — Weblina LLC")
     )
   );
 }
