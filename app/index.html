@@ -161,7 +161,7 @@ const TASK_STATUS_COLORS = {
 const S = {
   root: { display:"flex", flexDirection:"column", height:"100vh", background:C.bg, color:C.offwhite, fontFamily:"'Inter',system-ui,sans-serif", overflow:"hidden" },
   header: { background:C.card, borderBottom:`1px solid ${C.border}`, padding:"0 20px", height:56, display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 },
-  sidebar: { width:220, background:C.card, borderRight:`1px solid ${C.border}`, overflowY:"auto", flexShrink:0, padding:"8px 0" },
+  sidebar: { width:220, background:C.card, borderRight:`1px solid ${C.border}`, overflowY:"auto", flexShrink:0, padding:"8px 0", display:"flex", flexDirection:"column" },
   content: { flex:1, overflowY:"auto", padding:20 },
   card: { background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:16, marginBottom:12 },
   input: { width:"100%", background:C.inputBg, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", color:C.white, fontSize:14, fontFamily:"inherit", outline:"none" },
@@ -585,7 +585,10 @@ function Sidebar({ view, activeId, projects, navTo, selectProject, enterManageme
         e("div", {style:{...S.sideItem(view==="quotes"), fontSize:12}, onClick:()=>navTo("quotes")}, Icon("quote",13), "Quotes"),
         e("div", {style:{...S.sideItem(view==="planning"), fontSize:12}, onClick:()=>navTo("planning")}, Icon("calendar",13), "Planning")
       )
-    ))
+    )),
+    e("div", {style:{marginTop:"auto", padding:"14px 16px", fontSize:11, color:C.grayDark}},
+      e("a", {href:"https://weblina.llc", target:"_blank", rel:"noopener", style:{color:"inherit", textDecoration:"none"}}, "Built by Weblina")
+    )
   );
 }
 
@@ -653,7 +656,10 @@ function HomeView({ projects, mgmtTasks, enterManagement, selectProject, setShow
           e("div", null, e("div", {style:S.label}, "Budget"), e("div", {style:{fontSize:15, fontWeight:700, color:C.white}}, fmtMoney(p.materialsBudget)))
         )
       );
-    })
+    }),
+    e("div", {style:{textAlign:"center", marginTop:24, fontSize:11, color:C.grayDark}},
+      e("a", {href:"https://weblina.llc", target:"_blank", rel:"noopener", style:{color:"inherit", textDecoration:"none"}}, "Built by Weblina")
+    )
   );
 }
 
@@ -1258,10 +1264,7 @@ function App() {
         }}, CONFIG.logoText),
         e("div", {style:{fontSize:15, fontWeight:900, color:C.white, letterSpacing:"-0.3px"}}, activeProject ? activeProject.name : CONFIG.companyName)
       ),
-      e("div", {style:{display:"flex", alignItems:"center", gap:16}},
-        e("div", {onClick:()=>{setAuthed(false); setPin(""); setActiveId(null); setView("home");}, style:{cursor:"pointer", color:C.gray, display:"flex"}}, Icon("logout",18)),
-        e("img", {src:"./buildflow-logo.png", alt:"BuildFlow by Weblina LLC", style:{height:24, opacity:0.9}})
-      )
+      e("div", {onClick:()=>{setAuthed(false); setPin(""); setActiveId(null); setView("home");}, style:{cursor:"pointer", color:C.gray, display:"flex"}}, Icon("logout",18))
     ),
     e("div", {style:{display:"flex", flex:1, overflow:"hidden"}},
       e(Sidebar, {view, activeId, projects, navTo, selectProject, enterManagement}),
